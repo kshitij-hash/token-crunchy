@@ -1,13 +1,10 @@
 "use client";
 
-import { useState } from "react";
 import { ConnectKitButton } from "connectkit";
-import { Loader } from "./retroui/Loader";
 import { Text } from "./retroui/Text";
+import { Button } from "./retroui/Button";
 
 export function LoginPage() {
-  const [isConnecting, setIsConnecting] = useState(false);
-
   return (
     <div className="min-h-screen bg-white flex flex-col">
       <div className="flex-1 flex items-center justify-center px-6">
@@ -32,16 +29,13 @@ export function LoginPage() {
           </div>
 
           <div className="pt-0 flex flex-col items-center justify-center space-y-2">
-            {isConnecting ? (
-              <div className="flex flex-col items-center space-y-3">
-                <Loader size="md" count={3} />
-                <Text className="text-gray-600">Connecting wallet...</Text>
-              </div>
-            ) : (
-              <div onClick={() => setIsConnecting(true)}>
-                <ConnectKitButton />
-              </div>
-            )}
+            <div>
+              <ConnectKitButton.Custom>
+                {({ show }) => {
+                  return <Button onClick={show}>Connect Wallet</Button>;
+                }}
+              </ConnectKitButton.Custom>
+            </div>
           </div>
         </div>
       </div>

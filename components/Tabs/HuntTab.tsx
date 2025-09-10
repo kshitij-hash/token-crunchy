@@ -26,10 +26,10 @@ export function HuntTab({ scannedQRs, onScanQR }: HuntTabProps) {
     const loadHuntData = async () => {
       setIsLoading(true);
       // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 800));
+      await new Promise((resolve) => setTimeout(resolve, 800));
       setIsLoading(false);
     };
-    
+
     loadHuntData();
   }, []);
 
@@ -50,7 +50,7 @@ export function HuntTab({ scannedQRs, onScanQR }: HuntTabProps) {
         </Card.Header>
         <Card.Content>
           <ProgressTracker scannedQRs={scannedQRs} />
-          <div className="mt-4 text-center">
+          <div className="mt-4">
             <Button
               variant="default"
               onClick={onScanQR}
