@@ -1,12 +1,18 @@
 "use client";
 
-import { Button } from "@/components/retroui/Button";
-import { QRScanner } from "@/components/QRScanner";
-import { ProgressTracker } from "@/components/ProgressTracker";
-import { GameRules } from "@/components/GameRules";
-import { WalletConnect } from "@/components/WalletConnect";
 import { useState, useEffect } from "react";
-import { Coins } from "lucide-react";
+import { useAccount } from "wagmi";
+import { LoginPage } from "@/components/LoginPage";
+import { QRScanner } from "@/components/Tabs/QRScanner";
+import { TabNavigation } from "@/components/Tabs/TabNavigation";
+import { Info } from "lucide-react";
+import { Dialog } from "@/components/retroui/Dialog";
+import { ConnectKitButton } from "connectkit";
+import { Button } from "@/components/retroui/Button";
+import { Text } from "@/components/retroui/Text";
+import { LeaderboardTab } from "@/components/Tabs/LeaderboardTab";
+import { ShopTab } from "@/components/Tabs/ShopTab";
+import { HuntTab } from "@/components/Tabs/HuntTab";
 
 interface ScannedQR {
   id: number;
@@ -14,13 +20,26 @@ interface ScannedQR {
   location?: string;
 }
 
+interface ShopItem {
+  id: string;
+  name: string;
+  price: number;
+  category: "snack" | "drink";
+  emoji: string;
+  description: string;
+  inStock: boolean;
+}
+
 export default function Home() {
   const [scannedQRs, setScannedQRs] = useState<ScannedQR[]>([]);
   const [showScanner, setShowScanner] = useState(false);
-  const [walletConnected, setWalletConnected] = useState(false);
   const [totalCrunchies, setTotalCrunchies] = useState(0);
+  const [activeTab, setActiveTab] = useState<"home" | "shop" | "leaderboard">(
+    "home"
+  );
+  const { address, isConnected } = useAccount();
 
-  // Load saved progress from localStorage
+  // Load saved progress
   useEffect(() => {
     const saved = localStorage.getItem("athena-qr-progress");
     if (saved) {
@@ -30,7 +49,7 @@ export default function Home() {
     }
   }, []);
 
-  // Save progress to localStorage
+  // Save progress
   useEffect(() => {
     localStorage.setItem(
       "athena-qr-progress",
@@ -69,83 +88,138 @@ export default function Home() {
     }
   };
 
-  const resetProgress = () => {
-    if (confirm("Are you sure you want to reset all progress?")) {
-      setScannedQRs([]);
-      setTotalCrunchies(0);
-      localStorage.removeItem("athena-qr-progress");
+  const handlePurchase = (item: ShopItem) => {
+    if (totalCrunchies >= item.price) {
+      setTotalCrunchies((prev) => prev - item.price);
+      alert(`🎉 Successfully purchased ${item.name}! Enjoy your ${item.emoji}`);
+    } else {
+      alert("Insufficient $crunchies!");
     }
   };
 
+  // Show login page if wallet is not connected
+  if (!isConnected) {
+    return <LoginPage />;
+  }
+
+  // Show QR Scanner modal
+  if (showScanner) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <QRScanner
+          onQRScanned={handleQRScanned}
+          expectedQR={scannedQRs.length + 1}
+          onClose={() => setShowScanner(false)}
+        />
+      </div>
+    );
+  }
+
+  // Main App View - Tab-based navigation
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-900">
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">
-            Athena QR Hunt
-          </h1>
-          <p className="text-gray-600">
-            Find 20 QR codes around the villa and earn $crunchies
-          </p>
-        </div>
-
-        {/* Wallet & Stats */}
-        <div className="flex flex-col md:flex-row gap-4 mb-8 items-center justify-center">
-          <WalletConnect
-            connected={walletConnected}
-            onConnect={setWalletConnected}
-          />
-          <div className="flex items-center gap-2 bg-white border rounded-lg px-4 py-2">
-            <Coins className="w-5 h-5 text-gray-600" />
-            <span className="font-semibold">{totalCrunchies} $crunchies</span>
-          </div>
-        </div>
-
-        {/* Progress Tracker */}
-        <div className="mb-8">
-          <ProgressTracker scannedQRs={scannedQRs} />
-        </div>
-
-        {/* Main Action Area */}
-        <div className="text-center mb-8">
-          {!showScanner ? (
-            <div className="space-y-4">
-              <Button size="lg" onClick={() => setShowScanner(true)}>
-                {scannedQRs.length === 0
-                  ? "Start QR Hunt"
-                  : `Scan QR #${scannedQRs.length + 1}`}
+    <div className="min-h-screen bg-gray-100 flex flex-col">
+      {/* Header */}
+      <div className="bg-white border-b-2 border-black px-4 py-3">
+        <div className="flex justify-between items-center mb-2">
+          <Dialog>
+            <Dialog.Trigger asChild>
+              <Button size="icon" className="rounded-full">
+                <Info className="w-5 h-5" />
               </Button>
-              {scannedQRs.length > 0 && (
-                <Button
-                  variant="outline"
-                  onClick={resetProgress}
-                  className="ml-4"
-                >
-                  Reset Progress
-                </Button>
-              )}
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <QRScanner
-                onQRScanned={handleQRScanned}
-                expectedQR={scannedQRs.length + 1}
-              />
-              <Button variant="secondary" onClick={() => setShowScanner(false)}>
-                Close Scanner
-              </Button>
-            </div>
+            </Dialog.Trigger>
+            <Dialog.Content
+              size="md"
+              className="bg-white border-2 border-black rounded-lg"
+            >
+              <Dialog.Header className="bg-white text-black border-b-2 border-black">
+                <Text as="h3">How to Play</Text>
+              </Dialog.Header>
+              <div className="p-6 space-y-4">
+                <div className="space-y-4">
+                  <div className="flex items-start gap-3">
+                    <span className="text-2xl">🕵️‍♂️</span>
+                    <div>
+                      <Text as="h4" className="font-semibold text-black mb-1">
+                        Explore & Find
+                      </Text>
+                      <Text>
+                        Hunt for special QR codes hidden around the event venue.
+                      </Text>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3">
+                    <span className="text-2xl">📲</span>
+                    <div>
+                      <Text as="h4" className="font-semibold text-black mb-1">
+                        Scan & Earn
+                      </Text>
+                      <Text>
+                        Use the &quot;Scan QR&quot; button on the Home screen to
+                        scan the codes and instantly earn $crunchies tokens.
+                      </Text>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3">
+                    <span className="text-2xl">🥤</span>
+                    <div>
+                      <Text as="h4" className="font-semibold text-black mb-1">
+                        Redeem & Enjoy
+                      </Text>
+                      <Text>
+                        Go to the &quot;Shop&quot; tab to use your tokens for
+                        real-life snacks and drinks!
+                      </Text>
+                    </div>
+                  </div>
+
+                  <div className="bg-gray-50 border-2 border-black rounded-lg p-4 mt-6">
+                    <div className="flex items-start gap-3">
+                      <span className="text-2xl">🏆</span>
+                      <div>
+                        <Text as="h4" className="font-semibold text-black mb-1">
+                          Pro-Tip
+                        </Text>
+                        <Text>
+                          Keep an eye on the &quot;Leaderboard&quot; to see how
+                          you stack up against other participants.
+                        </Text>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </Dialog.Content>
+          </Dialog>
+          <ConnectKitButton showAvatar={false} />
+        </div>
+      </div>
+
+      {/* Tab Content */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="container mx-auto px-4 py-6 max-w-2xl">
+          {activeTab === "home" && (
+            <HuntTab
+              scannedQRs={scannedQRs}
+              onScanQR={() => setShowScanner(true)}
+            />
+          )}
+          {activeTab === "shop" && (
+            <ShopTab
+              totalCrunchies={totalCrunchies}
+              onPurchase={handlePurchase}
+            />
+          )}
+          {activeTab === "leaderboard" && (
+            <LeaderboardTab currentUserAddress={address} />
           )}
         </div>
+      </div>
 
-        {/* Game Rules */}
-        <GameRules />
-
-        {/* Footer */}
-        <div className="text-center mt-12 text-gray-500 text-sm">
-          <p>Built for Athena Hackerhouse • Powered by Monad Testnet</p>
-        </div>
+      {/* Bottom Navigation */}
+      <div className="sticky bottom-0">
+        <TabNavigation activeTab={activeTab} onTabChange={setActiveTab} />
       </div>
     </div>
   );

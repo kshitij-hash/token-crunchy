@@ -1,6 +1,7 @@
 "use client";
 
 import { CheckCircle, Circle, Lock } from "lucide-react";
+import { Text } from "../retroui/Text";
 
 interface ScannedQR {
   id: number;
@@ -13,8 +14,8 @@ interface ProgressTrackerProps {
 }
 
 export function ProgressTracker({ scannedQRs }: ProgressTrackerProps) {
-  const totalQRs = 20;
-  const scannedIds = new Set(scannedQRs.map(qr => qr.id));
+  const totalQRs = 15;
+  const scannedIds = new Set(scannedQRs.map((qr) => qr.id));
   const nextQR = scannedQRs.length + 1;
 
   const getQRStatus = (qrId: number) => {
@@ -57,28 +58,30 @@ export function ProgressTracker({ scannedQRs }: ProgressTrackerProps) {
   return (
     <div className="bg-white border rounded-lg p-6">
       <div className="text-center mb-6">
-        <h2 className="text-xl font-bold text-gray-900 mb-2">Progress Tracker</h2>
+        <Text as="h2" className="text-xl font-bold text-gray-900 mb-2">
+          Progress Tracker
+        </Text>
         <div className="flex items-center justify-center gap-4 mb-4">
-          <span className="text-gray-600">
+          <Text className="text-gray-600">
             {scannedQRs.length} / {totalQRs} QR Codes Found
-          </span>
-          <div className="text-lg font-semibold text-gray-900">
+          </Text>
+          <Text className="text-gray-700 font-bold">
             {Math.round(progressPercentage)}%
-          </div>
+          </Text>
         </div>
-        
+
         {/* Progress Bar */}
         <div className="w-full bg-gray-200 rounded-full h-2 mb-4">
-          <div 
+          <div
             className="bg-blue-600 h-2 rounded-full transition-all duration-500"
             style={{ width: `${progressPercentage}%` }}
           ></div>
         </div>
 
         {nextQR <= totalQRs && (
-          <p className="text-blue-600 font-medium text-sm">
+          <Text className="text-blue-600 font-medium">
             Next: QR Code #{nextQR}
-          </p>
+          </Text>
         )}
       </div>
 
@@ -86,7 +89,7 @@ export function ProgressTracker({ scannedQRs }: ProgressTrackerProps) {
       <div className="grid grid-cols-5 gap-2 md:grid-cols-10">
         {Array.from({ length: totalQRs }, (_, i) => {
           const qrId = i + 1;
-          
+
           return (
             <div
               key={qrId}
@@ -96,9 +99,7 @@ export function ProgressTracker({ scannedQRs }: ProgressTrackerProps) {
               `}
             >
               {getStatusIcon(qrId)}
-              <span className="text-xs font-medium mt-1">
-                {qrId}
-              </span>
+              <Text className="text-xs font-medium mt-1">{qrId}</Text>
             </div>
           );
         })}
@@ -108,31 +109,41 @@ export function ProgressTracker({ scannedQRs }: ProgressTrackerProps) {
       <div className="flex flex-wrap justify-center gap-4 mt-4 text-sm">
         <div className="flex items-center gap-1">
           <CheckCircle className="w-4 h-4 text-green-600" />
-          <span className="text-gray-600">Completed</span>
+          <Text className="text-gray-600">Completed</Text>
         </div>
         <div className="flex items-center gap-1">
           <Circle className="w-4 h-4 text-blue-600" />
-          <span className="text-gray-600">Current</span>
+          <Text className="text-gray-600">Current</Text>
         </div>
         <div className="flex items-center gap-1">
           <Lock className="w-4 h-4 text-gray-400" />
-          <span className="text-gray-600">Locked</span>
+          <Text className="text-gray-600">Locked</Text>
         </div>
       </div>
 
       {/* Recent Scans */}
       {scannedQRs.length > 0 && (
         <div className="mt-6 pt-4 border-t">
-          <h3 className="text-sm font-semibold text-gray-900 mb-2">Recent Scans</h3>
+          <Text as="h3" className="text-sm font-semibold text-gray-900 mb-2">
+            Recent Scans
+          </Text>
           <div className="space-y-1">
-            {scannedQRs.slice(-3).reverse().map((qr) => (
-              <div key={qr.id} className="flex items-center justify-between bg-gray-50 rounded px-3 py-1">
-                <span className="text-green-600 font-medium text-sm">QR #{qr.id}</span>
-                <span className="text-gray-500 text-xs">
-                  {new Date(qr.timestamp).toLocaleTimeString()}
-                </span>
-              </div>
-            ))}
+            {scannedQRs
+              .slice(-3)
+              .reverse()
+              .map((qr) => (
+                <div
+                  key={qr.id}
+                  className="flex items-center justify-between bg-gray-50 rounded px-3 py-1"
+                >
+                  <Text className="text-green-600 font-medium text-sm">
+                    QR #{qr.id}
+                  </Text>
+                  <Text className="text-gray-500 text-xs">
+                    {new Date(qr.timestamp).toLocaleTimeString()}
+                  </Text>
+                </div>
+              ))}
           </div>
         </div>
       )}
