@@ -4,6 +4,7 @@ pragma solidity ^0.8.13;
 import {Script, console} from "forge-std/Script.sol";
 import "../src/CrunchyToken.sol";
 
+
 contract DeployScript is Script {
     function setUp() public {}
 
@@ -17,10 +18,10 @@ contract DeployScript is Script {
         console.log("Deployer balance:", deployer.balance);
         
         vm.startBroadcast(deployerPrivateKey);
-        
+         
         // Deploy the contract with deployer as initial owner
-        CrunchyToken token = new CrunchyToken(deployer);
-        
+      CrunchyToken token = new CrunchyToken(deployer);
+
         vm.stopBroadcast();
         
         console.log("CrunchyToken deployed at:", address(token));
@@ -34,6 +35,6 @@ contract DeployScript is Script {
         require(token.balanceOf(deployer) == 100_000_000 * 10**18, "Owner balance mismatch");
         require(token.owner() == deployer, "Owner mismatch");
         
-        console.log("✅ Deployment successful and verified!");
+        console.log("Deployment successful and verified!");
     }
 }

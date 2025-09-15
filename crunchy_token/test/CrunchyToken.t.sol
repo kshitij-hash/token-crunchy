@@ -258,9 +258,6 @@ contract CrunchyTokenTest is Test {
         vm.prank(owner);
         token.transferOwnership(user1);
         
-        vm.prank(user1);
-        token.acceptOwnership();
-        
         assertEq(token.owner(), user1);
         
         // New owner can mint
