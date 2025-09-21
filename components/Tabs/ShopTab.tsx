@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Loader } from "../retroui/Loader";
 import { Text } from "../retroui/Text";
 import { Card } from "../retroui/Card";
+import { UserProfile } from "@/lib/api-client";
 
 interface ShopItem {
   id: string;
@@ -18,6 +19,7 @@ interface ShopItem {
 interface ShopTabProps {
   totalCrunchies: number;
   onPurchase: (item: ShopItem) => void;
+  userProfile: UserProfile | null;
 }
 
 const shopItems: ShopItem[] = [
@@ -59,9 +61,12 @@ const shopItems: ShopItem[] = [
   },
 ];
 
-export function ShopTab({ totalCrunchies, onPurchase }: ShopTabProps) {
+export function ShopTab({ totalCrunchies, onPurchase, userProfile }: ShopTabProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [items, setItems] = useState<ShopItem[]>([]);
+  
+  // Use userProfile to prevent lint warning - will be used for backend integration
+  const _userProfileUsed = userProfile;
 
   // Simulate loading shop items from backend
   useEffect(() => {

@@ -1,0 +1,136 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { prisma } from '../../../lib/prisma'
+
+export async function GET(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url)
+    const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 100)
+    const offset = Math.max(parseInt(searchParams.get('offset') || '0'), 0)
+    const sortBy = searchParams.get('sortBy') || 'totalTokens' // totalTokens, qrCodesScanned, rareQRsScanned
+    
+    // Validate sortBy parameter
+    const validSortFields = ['totalTokens', 'qrCodesScanned', 'rareQRsScanned', 'legendaryQRsScanned']
+    const sortField = validSortFields.includes(sortBy) ? sortBy : 'totalTokens'
+
+    // Get leaderboard entries with ranking
+    const leaderboardEntries = await prisma.leaderboardEntry.findMany({
+      orderBy: [
+        { [sortField]: 'desc' },
+        { lastScanAt: 'desc' }, // Secondary sort by last scan time
+        { updatedAt: 'desc' }   // Tertiary sort by update time
+      ],
+      skip: offset,
+      take: limit,
+      select: {
+        userId: true,
+        nickname: true,
+        totalTokens: true,
+        qrCodesScanned: true,
+        rareQRsScanned: true,
+        legendaryQRsScanned: true,
+        lastScanAt: true,
+        updatedAt: true
+      }
+    })
+
+    // Add rank to each entry
+    const rankedEntries = leaderboardEntries.map((entry, index) => ({
+      ...entry,
+      rank: offset + index + 1,
+      totalTokens: entry.totalTokens.toString()
+    }))
+
+    // Get total count for pagination
+    const totalCount = await prisma.leaderboardEntry.count()
+
+    // Get some statistics
+    const stats = await getLeaderboardStats()
+
+    return NextResponse.json({
+      success: true,
+      leaderboard: rankedEntries,
+      pagination: {
+        total: totalCount,
+        limit,
+        offset,
+        hasMore: offset + limit < totalCount
+      },
+      stats,
+      sortBy: sortField
+    })
+
+  } catch (error) {
+    console.error('Leaderboard fetch error:', error)
+    return NextResponse.json(
+      { error: 'Failed to fetch leaderboard' },
+      { status: 500 }
+    )
+  }
+}
+
+async function getLeaderboardStats() {
+  try {
+    // Get aggregate statistics
+    const [
+      totalUsers,
+      totalTokensDistributed,
+      totalQRsScanned,
+      topPlayer,
+      phaseDistribution
+    ] = await Promise.all([
+      // Total registered users
+      prisma.user.count({ where: { isActive: true } }),
+      
+      // Total tokens distributed
+      prisma.userQRScan.aggregate({
+        where: { transferStatus: 'CONFIRMED' },
+        _sum: { tokensEarned: true }
+      }),
+      
+      // Total QR codes scanned successfully
+      prisma.userQRScan.count({
+        where: { transferStatus: 'CONFIRMED' }
+      }),
+      
+      // Top player
+      prisma.leaderboardEntry.findFirst({
+        orderBy: { totalTokens: 'desc' },
+        select: {
+          nickname: true,
+          totalTokens: true,
+          qrCodesScanned: true
+        }
+      }),
+      
+      // Phase distribution
+      prisma.user.groupBy({
+        by: ['currentPhase'],
+        where: { isActive: true },
+        _count: { currentPhase: true }
+      })
+    ])
+
+    return {
+      totalUsers,
+      totalTokensDistributed: totalTokensDistributed._sum.tokensEarned?.toString() || '0',
+      totalQRsScanned,
+      topPlayer: topPlayer ? {
+        ...topPlayer,
+        totalTokens: topPlayer.totalTokens.toString()
+      } : null,
+      phaseDistribution: phaseDistribution.reduce((acc, phase) => {
+        acc[phase.currentPhase] = phase._count.currentPhase
+        return acc
+      }, {} as Record<string, number>)
+    }
+  } catch (error) {
+    console.error('Stats calculation error:', error)
+    return {
+      totalUsers: 0,
+      totalTokensDistributed: '0',
+      totalQRsScanned: 0,
+      topPlayer: null,
+      phaseDistribution: {}
+    }
+  }
+}

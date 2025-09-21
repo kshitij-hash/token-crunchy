@@ -1,10 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Camera, CameraOff, AlertCircle, X } from "lucide-react";
+import { Camera, CameraOff, AlertCircle, X, CheckCircle, Coins } from "lucide-react";
+import { useQRScanner } from "@/hooks/useQRScanner";
+import { formatTokens, getRarityEmoji } from "@/lib/api-client";
 
 interface QRScannerProps {
-  onQRScanned: (qrId: number) => void;
+  onQRScanned: (qrCode: string) => void;
   expectedQR: number;
   onClose: () => void;
 }
@@ -22,7 +24,14 @@ export function QRScanner({
   const [error, setError] = useState<string>("");
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [scanState, setScanState] = useState<ScanState>("scanning");
-  const [_scannedQRId, setScannedQRId] = useState<number | null>(null);
+  
+  const {
+    isProcessing,
+    result: scanResult,
+    error: scanError,
+    processQRCode,
+    clearResult
+  } = useQRScanner();
 
   const startCamera = async () => {
     try {
@@ -57,39 +66,50 @@ export function QRScanner({
   }, [stream]);
 
   const captureAndAnalyze = async () => {
-    if (!videoRef.current || !canvasRef.current) return;
+    if (!videoRef.current || !canvasRef.current || isProcessing) return;
 
-    // Simulate QR code detection (in a real app, you'd use a QR code library)
+    // For demo purposes, use prompt. In production, this would use a QR code library
     const qrCode = prompt(
-      `Scan QR #${expectedQR}\n\nFor demo: Enter the QR code number (1-15):`
+      `Scan QR Code\n\nFor demo: Enter the QR code (e.g., PHASE1_QR_01):`
     );
 
-    if (qrCode) {
-      const qrId = parseInt(qrCode);
-      if (!isNaN(qrId) && qrId >= 1 && qrId <= 15) {
-        setScannedQRId(qrId);
+    if (qrCode && qrCode.trim()) {
+      // Step 1: Show verifying state
+      setScanState("verifying");
+      setError("");
 
-        // Step 1: Show verifying state
-        setScanState("verifying");
+      try {
+        // Process QR code with backend
+        const result = await processQRCode(qrCode.trim());
 
-        // Simulate verification delay
-        await new Promise((resolve) => setTimeout(resolve, 2000));
+        if (result.success && result.result) {
+          // Step 2: Show success state
+          setScanState("success");
 
-        // Step 2: Show success state
-        setScanState("success");
-
-        // Step 3: Auto-navigate back after showing success
-        setTimeout(() => {
-          onQRScanned(qrId);
-          onClose();
-        }, 3000);
-      } else {
+          // Step 3: Auto-navigate back after showing success
+          setTimeout(() => {
+            onQRScanned(qrCode.trim());
+            onClose();
+            clearResult();
+          }, 4000);
+        } else {
+          // Show error state
+          setScanState("error");
+          setError(result.error || scanError || "QR scan failed");
+          
+          setTimeout(() => {
+            setScanState("scanning");
+            setError("");
+          }, 3000);
+        }
+      } catch (error) {
         setScanState("error");
-        setError("Invalid QR code! Please enter a number between 1-15.");
+        setError(error instanceof Error ? error.message : "QR scan failed");
+        
         setTimeout(() => {
           setScanState("scanning");
           setError("");
-        }, 2000);
+        }, 3000);
       }
     }
   };
@@ -125,14 +145,64 @@ export function QRScanner({
   }
 
   // Success State
-  if (scanState === "success") {
+  if (scanState === "success" && scanResult?.success && scanResult.scan) {
+    const { scan, phaseAdvancement, userStats } = scanResult;
+    
     return (
       <div className="fixed inset-0 bg-white flex items-center justify-center z-50">
-        <div className="text-center px-8">
+        <div className="text-center px-8 max-w-md">
           <div className="text-8xl mb-6">🎉</div>
           <h2 className="text-4xl font-bold text-black mb-4">Success!</h2>
-          <div className="text-6xl font-bold text-black mb-2">+50</div>
-          <div className="text-2xl text-gray-600 mb-6">$crunchies Claimed!</div>
+          
+          {/* QR Code Info */}
+          <div className="bg-gray-50 rounded-lg p-4 mb-6">
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <span className="text-2xl">{getRarityEmoji(scan.qrCode.rarity)}</span>
+              <h3 className="text-xl font-semibold text-black">{scan.qrCode.name}</h3>
+            </div>
+            {scan.qrCode.description && (
+              <p className="text-sm text-gray-600 mb-3">{scan.qrCode.description}</p>
+            )}
+            <div className="text-3xl font-bold text-green-600 mb-1">
+              +{formatTokens(scan.tokensEarned)}
+            </div>
+            <div className="text-lg text-gray-600">tokens earned!</div>
+          </div>
+
+          {/* Phase Advancement */}
+          {phaseAdvancement?.advanced && (
+            <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-4">
+              <div className="text-2xl mb-2">🚀</div>
+              <h4 className="font-bold text-purple-800 mb-1">Level Up!</h4>
+              <p className="text-sm text-purple-600">{phaseAdvancement.message}</p>
+            </div>
+          )}
+
+          {/* Transaction Status */}
+          {scan.transactionHash ? (
+            <div className="flex items-center justify-center gap-2 text-sm text-green-600 mb-4">
+              <CheckCircle className="w-4 h-4" />
+              <span>Tokens transferred to your wallet!</span>
+            </div>
+          ) : (
+            <div className="text-sm text-yellow-600 mb-4">
+              Token transfer in progress...
+            </div>
+          )}
+
+          {/* Updated Stats */}
+          {userStats && (
+            <div className="flex justify-center gap-4 text-sm text-gray-600 mb-6">
+              <div className="flex items-center gap-1">
+                <Coins className="w-4 h-4" />
+                <span>{formatTokens(userStats.totalTokens)} total</span>
+              </div>
+              <div>
+                <span>{userStats.qrCodesScanned} QRs found</span>
+              </div>
+            </div>
+          )}
+
           <p className="text-gray-500">Returning to dashboard...</p>
         </div>
       </div>

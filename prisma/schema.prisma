@@ -1,3 +1,6 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
 generator client {
   provider = "prisma-client-js"
   output   = "../lib/generated/prisma"
@@ -6,4 +9,123 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String   @id @default(cuid())
+  walletAddress   String   @unique @map("wallet_address")
+  nickname        String   @unique
+  totalTokens     Decimal  @default(0) @map("total_tokens") @db.Decimal(18, 8)
+  qrCodesScanned  Int      @default(0) @map("qr_codes_scanned") // Count of successfully scanned QRs
+  currentPhase    GamePhase @default(PHASE_1) @map("current_phase") // Track which phase user is in
+  lastScannedAt   DateTime? @map("last_scanned_at") // When user last scanned a QR
+  isActive        Boolean  @default(true) @map("is_active")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  scannedQRs      UserQRScan[]
+  
+  @@map("users")
+}
+
+
+model QRCode {
+  id            String     @id @default(cuid())
+  code          String     @unique // The actual QR code content/hash
+  name          String     // Descriptive name for the QR code
+  description   String?
+  phase         GamePhase  @default(PHASE_1) // Which phase this QR belongs to
+  sequenceOrder Int        @map("sequence_order") // Order within the phase (1-8 for phase 1, etc.)
+  rarity        QRRarity   @default(NORMAL)
+  tokenReward   Decimal    @map("token_reward") @db.Decimal(18, 8)
+  isActive      Boolean    @default(true) @map("is_active")
+  createdAt     DateTime   @default(now()) @map("created_at")
+  updatedAt     DateTime   @updatedAt @map("updated_at")
+  
+  // Relations
+  scannedBy     UserQRScan[]
+  hint          Hint? // One-to-one relation with hint
+  
+  @@unique([phase, sequenceOrder])
+  @@map("qr_codes")
+}
+
+model Hint {
+  id        String   @id @default(cuid())
+  content   String   // The actual hint text
+  title     String?  // Optional hint title
+  
+  // Foreign key
+  qrCodeId  String   @unique @map("qr_code_id")
+  
+  // Relations
+  qrCode    QRCode   @relation(fields: [qrCodeId], references: [id], onDelete: Cascade)
+  
+  @@map("hints")
+}
+
+// User QR Scan tracking - many-to-many relationship between users and QR codes
+model UserQRScan {
+  id           String   @id @default(cuid())
+  userId       String   @map("user_id")
+  qrCodeId     String   @map("qr_code_id")
+  tokensEarned Decimal  @map("tokens_earned") @db.Decimal(18, 8)
+  scannedAt    DateTime @default(now()) @map("scanned_at")
+  
+  // Token transfer tracking
+  transactionHash String?  @map("transaction_hash")
+  transferStatus  TransferStatus @default(PENDING) @map("transfer_status")
+  transferredAt   DateTime? @map("transferred_at")
+  gasUsed         String?   @map("gas_used")
+  
+  // Relations
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  qrCode       QRCode   @relation(fields: [qrCodeId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, qrCodeId]) // Each user can scan each QR code only once
+  @@map("user_qr_scans")
+}
+
+
+model LeaderboardEntry {
+  id              String   @id @default(cuid())
+  userId          String   @map("user_id")
+  nickname        String
+  totalTokens     Decimal  @map("total_tokens") @db.Decimal(18, 8)
+  qrCodesScanned  Int      @map("qr_codes_scanned")
+  rareQRsScanned  Int      @map("rare_qrs_scanned")
+  legendaryQRsScanned Int  @map("legendary_qrs_scanned")
+  lastScanAt      DateTime? @map("last_scan_at")
+  rank            Int?
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  
+  @@unique([userId])
+  @@map("leaderboard")
+}
+
+
+enum GamePhase {
+  PHASE_1  // 8 normal + easier QRs
+  PHASE_2  // 4 rare QRs  
+  PHASE_3  // 1 legendary QR (hint dropped at IRL event)
+  
+  @@map("game_phase")
+}
+
+enum QRRarity {
+  NORMAL
+  RARE
+  LEGENDARY
+  
+  @@map("qr_rarity")
+}
+
+enum TransferStatus {
+  PENDING     // Transfer queued
+  PROCESSING  // Transaction sent to blockchain
+  CONFIRMED   // Transaction confirmed on blockchain
+  FAILED      // Transaction failed
+  
+  @@map("transfer_status")
 }
