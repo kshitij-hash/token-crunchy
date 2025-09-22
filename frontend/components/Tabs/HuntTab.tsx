@@ -6,6 +6,7 @@ import { Button } from "../retroui/Button";
 import { UserProfile } from "@/lib/api-client";
 import { getPhaseDisplayName, getRarityEmoji } from "@/lib/api-client";
 import { Trophy } from "lucide-react";
+import { ProgressTracker } from "./ProgressTracker";
 
 interface HuntTabProps {
   scannedQRs: UserProfile['scannedQRs'];
@@ -27,6 +28,9 @@ export function HuntTab({ onScanQR, userProfile }: HuntTabProps) {
 
   return (
     <div className="space-y-6">
+      {/* QR Progress Tracker */}
+      <ProgressTracker userProfile={userProfile} />
+
       {/* Current Phase Card */}
       <Card className="bg-white border-black rounded-lg w-full">
         <Card.Header>
@@ -36,13 +40,6 @@ export function HuntTab({ onScanQR, userProfile }: HuntTabProps) {
           </Card.Title>
         </Card.Header>
         <Card.Content className="space-y-4">
-          {/* Progress will be shown via phase progress info */}
-          <div className="text-center p-4 bg-gray-50 rounded-lg">
-            <Text className="text-sm text-gray-600">
-              Progress: {userProfile.qrCodesScanned} QRs found in {getPhaseDisplayName(userProfile.currentPhase)}
-            </Text>
-          </div>
-          
           {/* Next QR Hint */}
           {phaseProgress.nextQR && (
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
