@@ -16,9 +16,9 @@ export interface AuthError {
   code: 'MISSING_AUTH' | 'INVALID_SIGNATURE' | 'EXPIRED_MESSAGE' | 'USER_NOT_FOUND' | 'INVALID_ADDRESS'
 }
 
-// Message format for wallet signature verification
+// Simplified message format for better wallet compatibility
 export const createAuthMessage = (address: string, timestamp: number): string => {
-  return `Token Crunchies Authentication\nWallet: ${address}\nTimestamp: ${timestamp}\nNonce: ${Math.random().toString(36).substring(7)}`
+  return `Welcome to Token Crunchies!\n\nSign this message to authenticate your wallet.\n\nWallet: ${address}\nTime: ${new Date(timestamp).toISOString()}\n\nThis request will not trigger any blockchain transaction or cost any gas fees.`
 }
 
 // Verify wallet signature and authenticate user
@@ -40,12 +40,12 @@ export async function verifyWalletSignature(
     }
 
     // Check message timestamp (should be within 5 minutes)
-    const timestampMatch = message.match(/Timestamp: (\d+)/)
+    const timestampMatch = message.match(/Time: (.+)/)
     if (!timestampMatch) {
       return { isValid: false, error: 'Invalid message format' }
     }
 
-    const messageTimestamp = parseInt(timestampMatch[1])
+    const messageTimestamp = new Date(timestampMatch[1]).getTime()
     const currentTimestamp = Date.now()
     const fiveMinutes = 5 * 60 * 1000
 
@@ -75,7 +75,8 @@ export async function authenticateUser(request: NextRequest): Promise<{
     // Get authentication headers
     const walletAddress = request.headers.get('x-wallet-address')
     const signature = request.headers.get('x-wallet-signature')
-    const message = request.headers.get('x-auth-message')
+    const encodedMessage = request.headers.get('x-auth-message')
+    const message = encodedMessage ? decodeURIComponent(encodedMessage) : null
 
     if (!walletAddress || !signature || !message) {
       return {

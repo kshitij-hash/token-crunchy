@@ -185,7 +185,7 @@ class TokenCrunchiesAPI {
     return {
       'x-wallet-address': this.walletAddress,
       'x-wallet-signature': signature,
-      'x-auth-message': message,
+      'x-auth-message': encodeURIComponent(message),
       'Content-Type': 'application/json'
     }
   }
@@ -203,11 +203,21 @@ class TokenCrunchiesAPI {
       }
 
       if (requireAuth) {
-        const authHeaders = await this.createAuthHeaders()
-        Object.assign(headers, authHeaders)
+        try {
+          const authHeaders = await this.createAuthHeaders()
+          Object.assign(headers, authHeaders)
+        } catch (authError) {
+          console.error('Auth headers creation failed:', authError)
+          return {
+            success: false,
+            error: authError instanceof Error ? authError.message : 'Authentication failed'
+          }
+        }
       }
 
-      const response = await fetch(`${this.baseUrl}/api${endpoint}`, {
+      const url = `${this.baseUrl}/api${endpoint}`
+
+      const response = await fetch(url, {
         ...options,
         headers
       })
@@ -227,6 +237,7 @@ class TokenCrunchiesAPI {
         data
       }
     } catch (error) {
+      console.error('API request failed:', error)
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Network error'
@@ -250,6 +261,18 @@ class TokenCrunchiesAPI {
       `/leaderboard${query ? `?${query}` : ''}`,
       { method: 'GET' }
     )
+  }
+
+  // Check if user exists (no auth required)
+  async checkUser(walletAddress: string): Promise<ApiResponse<{
+    userExists: boolean
+    isActive: boolean
+    nickname: string | null
+  }>> {
+    return this.request('/auth/check-user', {
+      method: 'POST',
+      body: JSON.stringify({ walletAddress })
+    })
   }
 
   // Authentication endpoints

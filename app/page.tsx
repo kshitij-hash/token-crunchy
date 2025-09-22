@@ -39,33 +39,36 @@ export default function Home() {
     isLoading: authLoading, 
     user, 
     error: authError,
+    needsAuthentication,
+    needsRegistration,
+    userExists,
+    authenticate,
     refreshProfile 
   } = useAuth();
 
-  // Show registration modal for connected but unregistered users
+  // Show registration modal immediately when user needs to register
   useEffect(() => {
-    if (isConnected && !authLoading && !isAuthenticated && !authError) {
+    if (isConnected && !authLoading && needsRegistration && userExists === false) {
       setShowRegistration(true);
     } else {
       setShowRegistration(false);
     }
-  }, [isConnected, authLoading, isAuthenticated, authError]);
+  }, [isConnected, authLoading, needsRegistration, userExists]);
 
-  const handleQRScanned = (qrCode: string) => {
-    console.log('QR scanned:', qrCode); // Log for debugging
+  const handleQRScanned = (_qrCode: string) => {
     setShowScanner(false);
     // Refresh user profile to get updated stats
     refreshProfile();
   };
 
-  const handlePurchase = (item: ShopItem) => {
-    console.log('Purchase attempted:', item.name); // Log for debugging
+  const handlePurchase = (_item: ShopItem) => {
     alert(`Purchase functionality will be implemented with backend integration`);
   };
 
   const handleRegistrationSuccess = () => {
     setShowRegistration(false);
-    // Profile will be automatically loaded by the auth hook
+    // Refresh profile to update authentication state after registration
+    refreshProfile();
   };
 
   // Show login page if wallet is not connected
@@ -80,6 +83,40 @@ export default function Home() {
         <div className="text-center space-y-4">
           <Loader size="lg" count={3} />
           <Text className="text-gray-600">Loading your profile...</Text>
+        </div>
+      </div>
+    );
+  }
+
+  // Show authentication prompt when wallet is connected but not authenticated
+  if (isConnected && needsAuthentication && !isAuthenticated && !showRegistration) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="max-w-md w-full mx-4">
+          <div className="bg-white border-2 border-black rounded-lg p-6 text-center space-y-4">
+            <div className="text-4xl mb-4">🔐</div>
+            <Text as="h2" className="text-xl font-bold text-black">
+              Authentication Required
+            </Text>
+            <Text className="text-gray-600">
+              Please sign a message to authenticate your wallet and access Token Crunchies.
+            </Text>
+            <Text className="text-sm text-gray-500">
+              This is free and won&apos;t cost any gas fees.
+            </Text>
+            <div className="space-y-3 pt-4">
+              <Button 
+                onClick={authenticate} 
+                className="w-full"
+                disabled={authLoading}
+              >
+                {authLoading ? 'Authenticating...' : 'Sign Message to Continue'}
+              </Button>
+              {authError && (
+                <Text className="text-red-600 text-sm">{authError}</Text>
+              )}
+            </div>
+          </div>
         </div>
       </div>
     );

@@ -13,6 +13,9 @@ export interface AuthState {
   user: UserProfile | null
   error: string | null
   isRegistering: boolean
+  needsAuthentication: boolean // New flag to indicate when user needs to authenticate
+  needsRegistration: boolean // New flag to indicate when user needs to register
+  userExists: boolean | null // Track if user exists in database
 }
 
 export function useAuth() {
@@ -24,26 +27,73 @@ export function useAuth() {
     isLoading: false,
     user: null,
     error: null,
-    isRegistering: false
+    isRegistering: false,
+    needsAuthentication: false,
+    needsRegistration: false,
+    userExists: null
   })
 
-  // Configure API client when wallet connects
+  // Check if user exists when wallet connects
+  const checkUserExists = useCallback(async (walletAddress: string) => {
+    setAuthState(prev => ({ ...prev, isLoading: true, error: null }))
+    
+    try {
+      const response = await apiClient.checkUser(walletAddress)
+      
+      if (response.success && response.data) {
+        const { userExists, isActive } = response.data
+        
+        setAuthState(prev => ({
+          ...prev,
+          isLoading: false,
+          userExists,
+          needsRegistration: !userExists,
+          needsAuthentication: userExists && isActive,
+          error: null
+        }))
+        
+        return { userExists, isActive }
+      } else {
+        setAuthState(prev => ({
+          ...prev,
+          isLoading: false,
+          error: response.error || 'Failed to check user status'
+        }))
+        return { userExists: false, isActive: false }
+      }
+    } catch (error) {
+      setAuthState(prev => ({
+        ...prev,
+        isLoading: false,
+        error: error instanceof Error ? error.message : 'Failed to check user status'
+      }))
+      return { userExists: false, isActive: false }
+    }
+  }, [])
+
+  // Configure API client and check user when wallet connects
   useEffect(() => {
     if (isConnected && address && signMessageAsync) {
       const signWrapper = async (message: string) => {
         return await signMessageAsync({ message })
       }
       apiClient.setAuth(address, signWrapper)
+      
+      // Check if user exists immediately when wallet connects
+      checkUserExists(address)
     } else {
       apiClient.clearAuth()
       setAuthState(prev => ({
         ...prev,
         isAuthenticated: false,
         user: null,
-        error: null
+        error: null,
+        needsAuthentication: false,
+        needsRegistration: false,
+        userExists: null
       }))
     }
-  }, [isConnected, address, signMessageAsync])
+  }, [isConnected, address, signMessageAsync, checkUserExists])
 
   // Load user profile when authenticated
   const loadProfile = useCallback(async () => {
@@ -60,6 +110,7 @@ export function useAuth() {
           isAuthenticated: true,
           user: response.data!.profile,
           isLoading: false,
+          needsAuthentication: false,
           error: null
         }))
       } else {
@@ -69,7 +120,7 @@ export function useAuth() {
           isAuthenticated: false,
           user: null,
           isLoading: false,
-          error: response.error === 'User not found. Please register first.' ? null : response.error || 'Failed to load profile'
+          error: response.error || 'Failed to load profile'
         }))
       }
     } catch (error) {
@@ -100,6 +151,9 @@ export function useAuth() {
           isAuthenticated: true,
           user: response.data!.user,
           isRegistering: false,
+          needsAuthentication: false,
+          needsRegistration: false,
+          userExists: true,
           error: null
         }))
         return { success: true }
@@ -137,20 +191,38 @@ export function useAuth() {
       isLoading: false,
       user: null,
       error: null,
-      isRegistering: false
+      isRegistering: false,
+      needsAuthentication: false,
+      needsRegistration: false,
+      userExists: null
     })
   }, [])
 
-  // Load profile when wallet connects
-  useEffect(() => {
-    if (isConnected && address && !authState.isLoading && !authState.isAuthenticated) {
-      loadProfile()
+  // Manual authentication function - user must explicitly call this
+  const authenticate = useCallback(async () => {
+    if (!isConnected || !address) {
+      setAuthState(prev => ({ ...prev, error: 'Please connect your wallet first' }))
+      return
     }
-  }, [isConnected, address, authState.isLoading, authState.isAuthenticated, loadProfile])
+    
+    try {
+      // Simple authentication - no chain checks for fun app
+      await loadProfile()
+    } catch (error) {
+      console.error('Authentication failed:', error)
+      setAuthState(prev => ({ 
+        ...prev, 
+        error: error instanceof Error ? error.message : 'Authentication failed',
+        isLoading: false
+      }))
+    }
+  }, [isConnected, address, loadProfile])
+
 
   return {
     ...authState,
     register,
+    authenticate,
     refreshProfile,
     logout,
     walletAddress: address,

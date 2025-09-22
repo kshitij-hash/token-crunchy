@@ -4,7 +4,7 @@ import { validateWeb3Config } from '@/lib/web3/monad-provider'
 import { handleApiError } from '@/lib/errors'
 
 // Get treasury wallet balance
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     // Check Web3 configuration
     const configCheck = validateWeb3Config()
