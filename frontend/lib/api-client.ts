@@ -388,13 +388,29 @@ export function getPhaseDisplayName(phase: string): string {
   return phaseNames[phase as keyof typeof phaseNames] || phase
 }
 
-export function getRarityColor(rarity: string): string {
+export function getRarityColor(rarity: string): {
+  text: string;
+  bg: string;
+  border: string;
+} {
   const colors = {
-    'NORMAL': 'text-gray-600 bg-gray-100',
-    'RARE': 'text-blue-600 bg-blue-100',
-    'LEGENDARY': 'text-purple-600 bg-purple-100'
+    'NORMAL': {
+      text: 'text-gray-700',
+      bg: 'bg-gray-50',
+      border: 'border-gray-200'
+    },
+    'RARE': {
+      text: 'text-blue-700',
+      bg: 'bg-blue-50',
+      border: 'border-blue-200'
+    },
+    'LEGENDARY': {
+      text: 'text-purple-700',
+      bg: 'bg-purple-50',
+      border: 'border-purple-200'
+    }
   }
-  return colors[rarity as keyof typeof colors] || 'text-gray-600 bg-gray-100'
+  return colors[rarity as keyof typeof colors] || colors.NORMAL
 }
 
 export function getRarityEmoji(rarity: string): string {

@@ -4,9 +4,10 @@ import { Text } from "../retroui/Text";
 import { Card } from "../retroui/Card";
 import { Button } from "../retroui/Button";
 import { UserProfile } from "@/lib/api-client";
-import { getPhaseDisplayName, getRarityEmoji } from "@/lib/api-client";
-import { Trophy } from "lucide-react";
+import { getPhaseDisplayName } from "@/lib/api-client";
+import { Trophy, Scan } from "lucide-react";
 import { ProgressTracker } from "./ProgressTracker";
+import { CurrentHint } from "./CurrentHint";
 
 interface HuntTabProps {
   scannedQRs: UserProfile['scannedQRs'];
@@ -28,60 +29,60 @@ export function HuntTab({ onScanQR, userProfile }: HuntTabProps) {
 
   return (
     <div className="space-y-6">
+      {/* Current Hint - Most Prominent */}
+      <CurrentHint 
+        nextQR={phaseProgress.nextQR}
+        isPhaseComplete={phaseProgress.isPhaseComplete}
+        currentPhase={userProfile.currentPhase}
+      />
+
+      {/* Scan Button - Prominent Call to Action */}
+      <div className="text-center">
+        <Button 
+          onClick={onScanQR} 
+          className="w-full py-4 text-lg font-semibold"
+          disabled={phaseProgress.isPhaseComplete && userProfile.currentPhase === 'PHASE_3'}
+        >
+          <Scan className="w-5 h-5 mr-2" />
+          {phaseProgress.isPhaseComplete && userProfile.currentPhase === 'PHASE_3' 
+            ? 'Hunt Complete!' 
+            : 'Scan QR Code'
+          }
+        </Button>
+      </div>
+
       {/* QR Progress Tracker */}
       <ProgressTracker userProfile={userProfile} />
 
-      {/* Current Phase Card */}
-      <Card className="bg-white border-black rounded-lg w-full">
+      {/* Current Phase Info */}
+      <Card className="bg-white border-gray-200 rounded-lg w-full">
         <Card.Header>
           <Card.Title className="flex items-center gap-2">
-            <Trophy className="w-5 h-5" />
-            {getPhaseDisplayName(userProfile.currentPhase)}
+            <Trophy className="w-5 h-5 text-yellow-600" />
+            <Text className="text-gray-800">
+              {getPhaseDisplayName(userProfile.currentPhase)}
+            </Text>
           </Card.Title>
         </Card.Header>
-        <Card.Content className="space-y-4">
-          {/* Next QR Hint */}
-          {phaseProgress.nextQR && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <div className="flex items-start gap-3">
-                <span className="text-2xl">{getRarityEmoji(phaseProgress.nextQR.rarity)}</span>
-                <div>
-                  <Text className="font-semibold text-blue-800 mb-1">
-                    Next: {phaseProgress.nextQR.name}
-                  </Text>
-                  {phaseProgress.nextQR.hint && (
-                    <Text className="text-sm text-blue-600">
-                      💡 {phaseProgress.nextQR.hint.content}
-                    </Text>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Phase Complete */}
-          {phaseProgress.isPhaseComplete && (
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
-              <div className="text-2xl mb-2">🎉</div>
-              <Text className="font-semibold text-green-800 mb-1">
-                Phase Complete!
+        <Card.Content>
+          <div className="grid grid-cols-2 gap-4 text-center">
+            <div className="bg-blue-50 rounded-lg p-3">
+              <Text className="text-2xl font-bold text-blue-600">
+                {phaseProgress.scannedQRs}
               </Text>
-              <Text className="text-sm text-green-600">
-                You&apos;ve found all QR codes in this phase. Great job!
+              <Text className="text-sm text-blue-600">
+                QRs Found
               </Text>
             </div>
-          )}
-          
-          <Button 
-            onClick={onScanQR} 
-            className="w-full"
-            disabled={phaseProgress.isPhaseComplete && userProfile.currentPhase === 'PHASE_3'}
-          >
-            {phaseProgress.isPhaseComplete && userProfile.currentPhase === 'PHASE_3' 
-              ? 'Hunt Complete!' 
-              : 'Scan QR Code'
-            }
-          </Button>
+            <div className="bg-purple-50 rounded-lg p-3">
+              <Text className="text-2xl font-bold text-purple-600">
+                {phaseProgress.totalQRs}
+              </Text>
+              <Text className="text-sm text-purple-600">
+                Total QRs
+              </Text>
+            </div>
+          </div>
         </Card.Content>
       </Card>
     </div>
