@@ -17,9 +17,8 @@ model User {
   nickname        String   @unique
   totalTokens     Decimal  @default(0) @map("total_tokens") @db.Decimal(18, 8)
   qrCodesScanned  Int      @default(0) @map("qr_codes_scanned") // Count of successfully scanned QRs
-  currentPhase    GamePhase @default(PHASE_1) @map("current_phase") // Track which phase user is in
+  currentPhase    GamePhase @default(PHASE_1) @map("current_phase") // Current game phase
   lastScannedAt   DateTime? @map("last_scanned_at") // When user last scanned a QR
-  isActive        Boolean  @default(true) @map("is_active")
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
   
@@ -34,8 +33,7 @@ model QRCode {
   id            String     @id @default(cuid())
   code          String     @unique // The actual QR code content/hash
   name          String     // Descriptive name for the QR code
-  description   String?
-  phase         GamePhase  @default(PHASE_1) // Which phase this QR belongs to
+  phase         GamePhase  // Game phase this QR belongs to
   sequenceOrder Int        @map("sequence_order") // Order within the phase (1-8 for phase 1, etc.)
   rarity        QRRarity   @default(NORMAL)
   tokenReward   Decimal    @map("token_reward") @db.Decimal(18, 8)
@@ -47,7 +45,6 @@ model QRCode {
   scannedBy     UserQRScan[]
   hint          Hint? // One-to-one relation with hint
   
-  @@unique([phase, sequenceOrder])
   @@map("qr_codes")
 }
 
@@ -105,20 +102,20 @@ model LeaderboardEntry {
 }
 
 
-enum GamePhase {
-  PHASE_1  // 8 normal + easier QRs
-  PHASE_2  // 4 rare QRs  
-  PHASE_3  // 1 legendary QR (hint dropped at IRL event)
-  
-  @@map("game_phase")
-}
-
 enum QRRarity {
   NORMAL
   RARE
   LEGENDARY
   
   @@map("qr_rarity")
+}
+
+enum GamePhase {
+  PHASE_1
+  PHASE_2
+  PHASE_3
+  
+  @@map("game_phase")
 }
 
 enum TransferStatus {

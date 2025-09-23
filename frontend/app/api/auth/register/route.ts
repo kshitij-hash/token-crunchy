@@ -90,9 +90,7 @@ export async function POST(request: NextRequest) {
         walletAddress: walletAddress.toLowerCase(),
         nickname,
         totalTokens: 0,
-        qrCodesScanned: 0,
-        currentPhase: 'PHASE_1',
-        isActive: true
+        qrCodesScanned: 0
       },
       select: {
         id: true,
@@ -100,7 +98,6 @@ export async function POST(request: NextRequest) {
         nickname: true,
         totalTokens: true,
         qrCodesScanned: true,
-        currentPhase: true,
         createdAt: true
       }
     })

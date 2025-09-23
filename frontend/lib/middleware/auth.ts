@@ -119,8 +119,7 @@ export async function authenticateUser(request: NextRequest): Promise<{
         id: true,
         walletAddress: true,
         nickname: true,
-        currentPhase: true,
-        isActive: true
+        currentPhase: true
       }
     })
 
@@ -134,15 +133,7 @@ export async function authenticateUser(request: NextRequest): Promise<{
       }
     }
 
-    if (!user.isActive) {
-      return {
-        success: false,
-        error: {
-          error: 'User account is inactive',
-          code: 'USER_NOT_FOUND'
-        }
-      }
-    }
+    // User is active by default in simplified system
 
     return {
       success: true,

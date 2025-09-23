@@ -8,7 +8,9 @@
     "start": "next start",
     "lint": "eslint",
     "db:seed": "tsx prisma/seed.ts",
-    "db:reset": "prisma db push --force-reset && npm run db:seed"
+    "db:reset": "prisma db push --force-reset && npm run db:seed",
+    "qr:generate": "tsx scripts/generate-qr-codes.ts",
+    "qr:images": "tsx scripts/generate-qr-images.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
@@ -28,6 +30,7 @@
     "lucide-react": "^0.543.0",
     "next": "15.5.2",
     "qr-scanner": "^1.4.2",
+    "qrcode": "^1.5.4",
     "qrcode.react": "^4.2.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",

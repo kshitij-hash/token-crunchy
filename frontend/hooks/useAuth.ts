@@ -41,25 +41,25 @@ export function useAuth() {
       const response = await apiClient.checkUser(walletAddress)
       
       if (response.success && response.data) {
-        const { userExists, isActive } = response.data
+        const { userExists } = response.data
         
         setAuthState(prev => ({
           ...prev,
           isLoading: false,
           userExists,
           needsRegistration: !userExists,
-          needsAuthentication: userExists && isActive,
+          needsAuthentication: userExists,
           error: null
         }))
         
-        return { userExists, isActive }
+        return { userExists }
       } else {
         setAuthState(prev => ({
           ...prev,
           isLoading: false,
           error: response.error || 'Failed to check user status'
         }))
-        return { userExists: false, isActive: false }
+        return { userExists: false }
       }
     } catch (error) {
       setAuthState(prev => ({
@@ -67,7 +67,7 @@ export function useAuth() {
         isLoading: false,
         error: error instanceof Error ? error.message : 'Failed to check user status'
       }))
-      return { userExists: false, isActive: false }
+      return { userExists: false }
     }
   }, [])
 

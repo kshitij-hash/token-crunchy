@@ -79,7 +79,7 @@ async function getLeaderboardStats() {
       phaseDistribution
     ] = await Promise.all([
       // Total registered users
-      prisma.user.count({ where: { isActive: true } }),
+      prisma.user.count(),
       
       // Total tokens distributed
       prisma.userQRScan.aggregate({
@@ -102,12 +102,8 @@ async function getLeaderboardStats() {
         }
       }),
       
-      // Phase distribution
-      prisma.user.groupBy({
-        by: ['currentPhase'],
-        where: { isActive: true },
-        _count: { currentPhase: true }
-      })
+      // No phase distribution in simplified system
+      Promise.resolve([])
     ])
 
     return {
@@ -118,10 +114,7 @@ async function getLeaderboardStats() {
         ...topPlayer,
         totalTokens: topPlayer.totalTokens.toString()
       } : null,
-      phaseDistribution: phaseDistribution.reduce((acc, phase) => {
-        acc[phase.currentPhase] = phase._count.currentPhase
-        return acc
-      }, {} as Record<string, number>)
+      phaseDistribution: {} // No phases in simplified system
     }
   } catch (error) {
     console.error('Stats calculation error:', error)

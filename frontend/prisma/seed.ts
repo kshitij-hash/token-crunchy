@@ -10,7 +10,6 @@ async function main() {
     {
       code: 'MYSTERY_QR_001',
       name: 'First Discovery',
-      description: 'The beginning of your adventure',
       phase: GamePhase.PHASE_1,
       sequenceOrder: 1,
       rarity: QRRarity.NORMAL,
@@ -23,7 +22,6 @@ async function main() {
     {
       code: 'MYSTERY_QR_002',
       name: 'Hidden Homes',
-      description: 'Small dwellings hold secrets',
       phase: GamePhase.PHASE_1,
       sequenceOrder: 2,
       rarity: QRRarity.NORMAL,
@@ -36,7 +34,6 @@ async function main() {
     {
       code: 'MYSTERY_QR_003',
       name: 'Aquatic Adventure',
-      description: 'Where water meets wonder',
       phase: GamePhase.PHASE_1,
       sequenceOrder: 3,
       rarity: QRRarity.NORMAL,
@@ -49,7 +46,6 @@ async function main() {
     {
       code: 'MYSTERY_QR_004',
       name: 'Hunger Station',
-      description: 'Where appetites are satisfied',
       phase: GamePhase.PHASE_1,
       sequenceOrder: 4,
       rarity: QRRarity.NORMAL,
@@ -62,7 +58,6 @@ async function main() {
     {
       code: 'MYSTERY_QR_005',
       name: 'Beat Drop Zone',
-      description: 'Where music meets magic',
       phase: GamePhase.PHASE_1,
       sequenceOrder: 5,
       rarity: QRRarity.NORMAL,
@@ -75,7 +70,6 @@ async function main() {
     {
       code: 'MYSTERY_QR_006',
       name: 'Central Command',
-      description: 'The heart of operations',
       phase: GamePhase.PHASE_1,
       sequenceOrder: 6,
       rarity: QRRarity.NORMAL,
@@ -150,7 +144,6 @@ async function main() {
     {
       code: 'PHASE1_QR_007',
       name: 'Mystery Location 7',
-      description: 'Phase 1 QR code 7',
       phase: GamePhase.PHASE_1,
       sequenceOrder: 7,
       rarity: QRRarity.NORMAL,
@@ -163,7 +156,6 @@ async function main() {
     {
       code: 'PHASE1_QR_008',
       name: 'Mystery Location 8',
-      description: 'Phase 1 QR code 8',
       phase: GamePhase.PHASE_1,
       sequenceOrder: 8,
       rarity: QRRarity.NORMAL,
@@ -216,7 +208,6 @@ async function main() {
     {
       code: 'PHASE2_RARE_001',
       name: 'Rare Location 1',
-      description: 'Phase 2 rare QR code 1',
       phase: GamePhase.PHASE_2,
       sequenceOrder: 1,
       rarity: QRRarity.RARE,
@@ -229,7 +220,6 @@ async function main() {
     {
       code: 'PHASE2_RARE_002',
       name: 'Rare Location 2',
-      description: 'Phase 2 rare QR code 2',
       phase: GamePhase.PHASE_2,
       sequenceOrder: 2,
       rarity: QRRarity.RARE,
@@ -242,7 +232,6 @@ async function main() {
     {
       code: 'PHASE2_RARE_003',
       name: 'Rare Location 3',
-      description: 'Phase 2 rare QR code 3',
       phase: GamePhase.PHASE_2,
       sequenceOrder: 3,
       rarity: QRRarity.RARE,
@@ -255,7 +244,6 @@ async function main() {
     {
       code: 'PHASE2_RARE_004',
       name: 'Rare Location 4',
-      description: 'Phase 2 rare QR code 4',
       phase: GamePhase.PHASE_2,
       sequenceOrder: 4,
       rarity: QRRarity.RARE,
@@ -307,7 +295,6 @@ async function main() {
   const phase3QR = {
     code: 'PHASE3_LEGENDARY_001',
     name: 'Legendary Location',
-    description: 'The ultimate legendary QR code',
     phase: GamePhase.PHASE_3,
     sequenceOrder: 1,
     rarity: QRRarity.LEGENDARY,

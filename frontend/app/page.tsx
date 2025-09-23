@@ -6,7 +6,8 @@ import { LoginPage } from "@/components/LoginPage";
 import { QRScanner } from "@/components/Tabs/QRScanner";
 import { TabNavigation } from "@/components/Tabs/TabNavigation";
 import { RegistrationModal } from "@/components/RegistrationModal";
-import { Info, User } from "lucide-react";
+import Link from 'next/link'
+import { Info, User, Settings } from "lucide-react";
 import { Dialog } from "@/components/retroui/Dialog";
 import { ConnectKitButton } from "connectkit";
 import { Button } from "@/components/retroui/Button";
@@ -213,7 +214,14 @@ export default function Home() {
                 </div>
               </Dialog.Content>
             </Dialog>
-            
+
+            {/* QR Admin Link */}
+            <Link href="/qr-admin">
+              <Button size="icon" variant="outline" className="rounded-full">
+                <Settings className="w-5 h-5" />
+              </Button>
+            </Link>
+
             {/* User Profile Button */}
             {isAuthenticated && user && (
               <Button variant="outline" size="sm" className="flex items-center gap-2">

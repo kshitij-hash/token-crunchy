@@ -28,15 +28,13 @@ export async function POST(request: NextRequest) {
       select: {
         id: true,
         walletAddress: true,
-        nickname: true,
-        isActive: true
+        nickname: true
       }
     })
 
     return NextResponse.json({
       success: true,
       userExists: !!user,
-      isActive: user?.isActive || false,
       nickname: user?.nickname || null
     })
 

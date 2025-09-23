@@ -266,7 +266,6 @@ class TokenCrunchiesAPI {
   // Check if user exists (no auth required)
   async checkUser(walletAddress: string): Promise<ApiResponse<{
     userExists: boolean
-    isActive: boolean
     nickname: string | null
   }>> {
     return this.request('/auth/check-user', {

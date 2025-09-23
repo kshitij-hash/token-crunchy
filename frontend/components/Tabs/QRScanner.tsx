@@ -4,6 +4,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Camera, CameraOff, AlertCircle, X, CheckCircle, Coins } from "lucide-react";
 import { useQRScanner } from "@/hooks/useQRScanner";
 import { formatTokens, getRarityEmoji } from "@/lib/api-client";
+import { extractQRMetadata, validateQRMetadata, QRMetadata } from "@/lib/qr-generator";
+import QrScanner from "qr-scanner";
 
 interface QRScannerProps {
   onQRScanned: (qrCode: string) => void;
@@ -19,11 +21,12 @@ export function QRScanner({
   onClose,
 }: QRScannerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const qrScannerRef = useRef<QrScanner | null>(null);
   const [isScanning, setIsScanning] = useState(false);
   const [error, setError] = useState<string>("");
-  const [stream, setStream] = useState<MediaStream | null>(null);
   const [scanState, setScanState] = useState<ScanState>("scanning");
+  const [hasCamera, setHasCamera] = useState(false);
+  const [extractedMetadata, setExtractedMetadata] = useState<QRMetadata | null>(null);
   
   const {
     isProcessing,
@@ -33,86 +36,122 @@ export function QRScanner({
     clearResult
   } = useQRScanner();
 
-  const startCamera = async () => {
+  const handleQRResult = async (result: QrScanner.ScanResult) => {
+    const qrCode = result.data;
+    
+    if (!qrCode || isProcessing) return;
+
+    // Stop scanning temporarily while processing
+    if (qrScannerRef.current) {
+      qrScannerRef.current.stop();
+    }
+
+    // Step 1: Show verifying state
+    setScanState("verifying");
+    setError("");
+
     try {
-      setError("");
-      const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: "environment",
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
-        },
-      });
+      // Process QR code with backend
+      const processResult = await processQRCode(qrCode.trim());
 
-      if (videoRef.current) {
-        videoRef.current.srcObject = mediaStream;
-        setStream(mediaStream);
-        setIsScanning(true);
-      }
-    } catch (err) {
-      setError(
-        "Camera access denied. Please allow camera permissions and try again."
-      );
-      console.error("Camera error:", err);
-    }
-  };
+      if (processResult.success && processResult.result) {
+        // Step 2: Show success state
+        setScanState("success");
 
-  const stopCamera = useCallback(() => {
-    if (stream) {
-      stream.getTracks().forEach((track) => track.stop());
-      setStream(null);
-    }
-    setIsScanning(false);
-  }, [stream]);
-
-  const captureAndAnalyze = async () => {
-    if (!videoRef.current || !canvasRef.current || isProcessing) return;
-
-    // For demo purposes, use prompt. In production, this would use a QR code library
-    const qrCode = prompt(
-      `Scan QR Code\n\nFor demo: Enter the QR code (e.g., PHASE1_QR_01):`
-    );
-
-    if (qrCode && qrCode.trim()) {
-      // Step 1: Show verifying state
-      setScanState("verifying");
-      setError("");
-
-      try {
-        // Process QR code with backend
-        const result = await processQRCode(qrCode.trim());
-
-        if (result.success && result.result) {
-          // Step 2: Show success state
-          setScanState("success");
-
-          // Step 3: Auto-navigate back after showing success
-          setTimeout(() => {
-            onQRScanned(qrCode.trim());
-            onClose();
-            clearResult();
-          }, 4000);
-        } else {
-          // Show error state
-          setScanState("error");
-          setError(result.error || scanError || "QR scan failed");
-          
-          setTimeout(() => {
-            setScanState("scanning");
-            setError("");
-          }, 3000);
-        }
-      } catch (error) {
+        // Step 3: Auto-navigate back after showing success
+        setTimeout(() => {
+          onQRScanned(qrCode.trim());
+          onClose();
+          clearResult();
+        }, 4000);
+      } else {
+        // Show error state
         setScanState("error");
-        setError(error instanceof Error ? error.message : "QR scan failed");
+        setError(processResult.error || scanError || "QR scan failed");
         
         setTimeout(() => {
           setScanState("scanning");
           setError("");
+          // Resume scanning
+          if (qrScannerRef.current && hasCamera) {
+            qrScannerRef.current.start();
+          }
         }, 3000);
+      }
+    } catch (error) {
+      setScanState("error");
+      setError(error instanceof Error ? error.message : "QR scan failed");
+      
+      setTimeout(() => {
+        setScanState("scanning");
+        setError("");
+        // Resume scanning
+        if (qrScannerRef.current && hasCamera) {
+          qrScannerRef.current.start();
+        }
+      }, 3000);
+    }
+  };
+
+  const startCamera = async () => {
+    if (!videoRef.current) return;
+
+    try {
+      setError("");
+      
+      // Check if camera is available
+      const hasCamera = await QrScanner.hasCamera();
+      if (!hasCamera) {
+        setError("No camera found on this device");
+        return;
+      }
+
+      setHasCamera(true);
+
+      // Create QR scanner instance
+      qrScannerRef.current = new QrScanner(
+        videoRef.current,
+        handleQRResult,
+        {
+          onDecodeError: (err) => {
+            // Ignore decode errors - they're normal when no QR code is visible
+            console.debug("QR decode error:", err);
+          },
+          highlightScanRegion: true,
+          highlightCodeOutline: true,
+          preferredCamera: 'environment', // Use back camera if available
+        }
+      );
+
+      await qrScannerRef.current.start();
+      setIsScanning(true);
+    } catch (err) {
+      console.error("Camera error:", err);
+      if (err instanceof Error) {
+        if (err.name === 'NotAllowedError') {
+          setError("Camera access denied. Please allow camera permissions and try again.");
+        } else if (err.name === 'NotFoundError') {
+          setError("No camera found on this device.");
+        } else if (err.name === 'NotSupportedError') {
+          setError("Camera not supported on this device.");
+        } else {
+          setError(`Camera error: ${err.message}`);
+        }
+      } else {
+        setError("Failed to access camera. Please check permissions.");
       }
     }
   };
+
+  const stopCamera = useCallback(() => {
+    if (qrScannerRef.current) {
+      qrScannerRef.current.stop();
+      qrScannerRef.current.destroy();
+      qrScannerRef.current = null;
+    }
+    setIsScanning(false);
+    setHasCamera(false);
+  }, []);
 
   const toggleCamera = () => {
     if (isScanning) {
@@ -244,7 +283,6 @@ export function QRScanner({
           muted
           className="w-full h-full object-cover"
         />
-        <canvas ref={canvasRef} className="hidden" />
 
         {/* Scanner overlay with square guide */}
         <div className="absolute inset-0 flex items-center justify-center">
@@ -280,13 +318,6 @@ export function QRScanner({
 
         <div className="flex gap-4 justify-center">
           <button
-            onClick={captureAndAnalyze}
-            disabled={!isScanning}
-            className="bg-white text-black px-8 py-3 rounded-lg font-semibold disabled:opacity-50"
-          >
-            Scan QR Code
-          </button>
-          <button
             onClick={toggleCamera}
             className="bg-gray-700 text-white p-3 rounded-lg"
           >
@@ -299,7 +330,7 @@ export function QRScanner({
         </div>
 
         <p className="text-gray-400 text-xs text-center mt-4">
-          Demo: Manual input will appear for testing
+          {isScanning ? "Camera is active - point at QR code to scan" : "Camera is off"}
         </p>
       </div>
     </div>

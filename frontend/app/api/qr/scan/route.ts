@@ -64,14 +64,10 @@ export const POST = withAuth(async (request, user) => {
     const userRecord = await prisma.user.findUnique({
       where: { id: user.id },
       select: {
-        currentPhase: true,
         qrCodesScanned: true,
         scannedQRs: {
           where: {
-            userId: user.id,
-            qrCode: {
-              phase: user.currentPhase as 'PHASE_1' | 'PHASE_2' | 'PHASE_3'
-            }
+            userId: user.id
           },
           orderBy: {
             qrCode: {
@@ -96,32 +92,18 @@ export const POST = withAuth(async (request, user) => {
       )
     }
 
-    // Validate phase progression
-    if (qrCodeRecord.phase !== userRecord.currentPhase) {
+    // Validate sequential scanning - users must scan QR codes in order
+    const expectedSequence = userRecord.scannedQRs.length + 1
+    
+    if (qrCodeRecord.sequenceOrder !== expectedSequence) {
       return NextResponse.json(
         { 
-          error: `This QR code belongs to ${qrCodeRecord.phase}. You are currently in ${userRecord.currentPhase}.`,
-          currentPhase: userRecord.currentPhase,
-          qrPhase: qrCodeRecord.phase
+          error: `Please scan QR codes in order. Expected QR #${expectedSequence}, but got QR #${qrCodeRecord.sequenceOrder}`,
+          expectedSequence,
+          receivedSequence: qrCodeRecord.sequenceOrder
         },
         { status: 400 }
       )
-    }
-
-    // Validate sequential scanning (for Phase 1)
-    if (userRecord.currentPhase === 'PHASE_1') {
-      const expectedSequence = userRecord.scannedQRs.length + 1
-      
-      if (qrCodeRecord.sequenceOrder !== expectedSequence) {
-        return NextResponse.json(
-          { 
-            error: `Please scan QR codes in order. Expected QR #${expectedSequence}, but got QR #${qrCodeRecord.sequenceOrder}`,
-            expectedSequence,
-            receivedSequence: qrCodeRecord.sequenceOrder
-          },
-          { status: 400 }
-        )
-      }
     }
 
     // Create scan record with pending transfer status
@@ -188,17 +170,7 @@ export const POST = withAuth(async (request, user) => {
       // Update leaderboard
       await updateLeaderboard(user.id, qrCodeRecord.rarity)
 
-      // Check if user should advance to next phase
-      const shouldAdvance = await checkPhaseAdvancement(user.id, userRecord.currentPhase)
-      
-      if (shouldAdvance.advance && shouldAdvance.nextPhase) {
-        await prisma.user.update({
-          where: { id: user.id },
-          data: {
-            currentPhase: shouldAdvance.nextPhase as 'PHASE_1' | 'PHASE_2' | 'PHASE_3'
-          }
-        })
-      }
+      // No phase advancement needed in simplified sequential system
 
       return NextResponse.json({
         success: true,
@@ -208,17 +180,10 @@ export const POST = withAuth(async (request, user) => {
           transactionHash: transferResult.transactionHash,
           qrCode: {
             name: qrCodeRecord.name,
-            description: qrCodeRecord.description,
             rarity: qrCodeRecord.rarity,
-            phase: qrCodeRecord.phase,
             sequenceOrder: qrCodeRecord.sequenceOrder
           }
         },
-        phaseAdvancement: shouldAdvance.advance ? {
-          advanced: true,
-          newPhase: shouldAdvance.nextPhase,
-          message: `Congratulations! You've advanced to ${shouldAdvance.nextPhase}!`
-        } : null,
         userStats: {
           totalTokens: updatedUser.totalTokens.toString(),
           qrCodesScanned: updatedUser.qrCodesScanned
@@ -234,9 +199,7 @@ export const POST = withAuth(async (request, user) => {
           transferError: transferResult.error,
           qrCode: {
             name: qrCodeRecord.name,
-            description: qrCodeRecord.description,
             rarity: qrCodeRecord.rarity,
-            phase: qrCodeRecord.phase,
             sequenceOrder: qrCodeRecord.sequenceOrder
           }
         }
@@ -289,31 +252,4 @@ async function updateLeaderboard(userId: string, qrRarity: string) {
   }
 }
 
-async function checkPhaseAdvancement(userId: string, currentPhase: string): Promise<{ advance: boolean; nextPhase: string | null }> {
-  const phaseRequirements: Record<string, { requiredQRs: number; nextPhase: string | null }> = {
-    'PHASE_1': { requiredQRs: 8, nextPhase: 'PHASE_2' },
-    'PHASE_2': { requiredQRs: 4, nextPhase: 'PHASE_3' },
-    'PHASE_3': { requiredQRs: 1, nextPhase: null }
-  }
-
-  const requirement = phaseRequirements[currentPhase]
-  
-  if (!requirement || !requirement.nextPhase) {
-    return { advance: false, nextPhase: null }
-  }
-
-  // Count QRs scanned in current phase
-  const scannedInPhase = await prisma.userQRScan.count({
-    where: {
-      userId,
-      qrCode: {
-        phase: currentPhase as 'PHASE_1' | 'PHASE_2' | 'PHASE_3'
-      }
-    }
-  })
-
-  return {
-    advance: scannedInPhase >= requirement.requiredQRs,
-    nextPhase: requirement.nextPhase
-  }
-}
+// Phase advancement function removed - no longer needed in sequential system

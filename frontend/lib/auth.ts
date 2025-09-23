@@ -9,7 +9,7 @@ export interface AuthResult {
     walletAddress: string
     nickname: string
     totalTokens: string
-    currentPhase: string
+    qrCodesScanned: number
   }
   error?: string
 }
@@ -88,7 +88,7 @@ export async function verifyWalletSignature(
         walletAddress: user.walletAddress,
         nickname: user.nickname,
         totalTokens: user.totalTokens.toString(),
-        currentPhase: user.currentPhase
+        qrCodesScanned: user.qrCodesScanned
       }
     }
 
@@ -138,10 +138,8 @@ export async function createOrUpdateUser(
       walletAddress: user.walletAddress,
       nickname: user.nickname,
       totalTokens: user.totalTokens.toString(),
-      currentPhase: user.currentPhase,
       qrCodesScanned: user.qrCodesScanned,
       lastScannedAt: user.lastScannedAt,
-      isActive: user.isActive,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt
     }
@@ -182,10 +180,8 @@ export async function getUserByWallet(walletAddress: string) {
       walletAddress: user.walletAddress,
       nickname: user.nickname,
       totalTokens: user.totalTokens.toString(),
-      currentPhase: user.currentPhase,
       qrCodesScanned: user.qrCodesScanned,
       lastScannedAt: user.lastScannedAt,
-      isActive: user.isActive,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
       scannedQRs: user.scannedQRs.map(scan => ({
@@ -197,8 +193,6 @@ export async function getUserByWallet(walletAddress: string) {
         qrCode: {
           id: scan.qrCode.id,
           name: scan.qrCode.name,
-          description: scan.qrCode.description,
-          phase: scan.qrCode.phase,
           rarity: scan.qrCode.rarity,
           tokenReward: scan.qrCode.tokenReward.toString()
         }
