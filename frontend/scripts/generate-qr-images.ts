@@ -65,16 +65,24 @@ async function generatePrintableQRCodes() {
 
       // Generate PNG version
       const pngDataUrl = await generateQRCode(metadata, {
-        width: 512,
-        margin: 4,
-        errorCorrectionLevel: 'M'
+        width: 2048,
+        margin: 1,
+        errorCorrectionLevel: 'H',
+        color: {
+          dark: '#000000',
+          light: '#FFFFFF'
+        }
       })
 
       // Generate SVG version
       const svgContent = await generateQRCodeSVG(metadata, {
-        width: 512,
-        margin: 4,
-        errorCorrectionLevel: 'M'
+        width: 2048,
+        margin: 1,
+        errorCorrectionLevel: 'H',
+        color: {
+          dark: '#000000',
+          light: '#FFFFFF'
+        }
       })
 
       // Create filename

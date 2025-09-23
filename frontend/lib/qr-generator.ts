@@ -29,22 +29,20 @@ export interface QRGenerationOptions {
 }
 
 /**
- * Creates a QR code data string with embedded metadata
- * The format is: TOKEN_CRUNCHIES://[base64-encoded-metadata]
+ * Creates a QR code data string with minimal essential metadata
+ * Uses a simple format: TOKEN_CRUNCHIES://[code]:[phase]:[sequence]:[reward]
  */
 export function createQRData(metadata: Omit<QRMetadata, 'timestamp' | 'version'>): string {
-  const fullMetadata: QRMetadata = {
-    ...metadata,
-    timestamp: Date.now(),
-    version: '1.0'
+  // For better scannability, use minimal data format
+  const minimalData = `${metadata.code}:${metadata.phase}:${metadata.sequenceOrder}:${metadata.tokenReward}:${metadata.rarity}`
+
+  // If hint is provided, add it but keep it simple
+  if (metadata.hint) {
+    const hintText = metadata.hint.content.substring(0, 100) // Limit hint length
+    return `TOKEN_CRUNCHIES://${minimalData}:${hintText.replace(/:/g, ';')}`
   }
-  
-  // Convert metadata to base64 for embedding
-  const metadataJson = JSON.stringify(fullMetadata)
-  const encodedMetadata = Buffer.from(metadataJson).toString('base64')
-  
-  // Create custom protocol URL with embedded metadata
-  return `TOKEN_CRUNCHIES://${encodedMetadata}`
+
+  return `TOKEN_CRUNCHIES://${minimalData}`
 }
 
 /**
@@ -56,17 +54,45 @@ export function extractQRMetadata(qrData: string): QRMetadata | null {
     if (!qrData.startsWith('TOKEN_CRUNCHIES://')) {
       return null
     }
-    
-    // Extract and decode metadata
-    const encodedMetadata = qrData.replace('TOKEN_CRUNCHIES://', '')
-    const metadataJson = Buffer.from(encodedMetadata, 'base64').toString('utf-8')
-    const metadata = JSON.parse(metadataJson) as QRMetadata
-    
-    // Validate required fields
-    if (!metadata.code || !metadata.name || !metadata.phase || !metadata.sequenceOrder) {
-      throw new Error('Invalid metadata structure')
+
+    // Extract data after protocol
+    const dataPart = qrData.replace('TOKEN_CRUNCHIES://', '')
+    const parts = dataPart.split(':')
+
+    if (parts.length < 5) {
+      throw new Error('Invalid QR data format')
     }
-    
+
+    // Parse the essential data
+    const code = parts[0]
+    const phase = parts[1] as 'PHASE_1' | 'PHASE_2' | 'PHASE_3'
+    const sequenceOrder = parseInt(parts[2])
+    const tokenReward = parts[3]
+    const rarity = parts[4] as 'NORMAL' | 'RARE' | 'LEGENDARY'
+
+    // Extract hint if present (everything after the 5th colon)
+    let hint = undefined
+    if (parts.length > 5) {
+      const hintText = parts.slice(5).join(':').replace(/;/g, ':')
+      // We'll need to look up the full hint from database based on code
+      hint = {
+        title: 'Location Hint',
+        content: hintText
+      }
+    }
+
+    const metadata: QRMetadata = {
+      code,
+      name: `QR Code ${code}`, // This will be looked up from database
+      phase,
+      sequenceOrder,
+      rarity,
+      tokenReward,
+      hint,
+      timestamp: Date.now(),
+      version: '1.0'
+    }
+
     return metadata
   } catch (error) {
     console.error('Failed to extract QR metadata:', error)
@@ -84,13 +110,13 @@ export async function generateQRCode(
   const qrData = createQRData(metadata)
   
   const qrOptions = {
-    width: options.width || 512,
-    margin: options.margin || 4,
+    width: options.width || 1024,
+    margin: options.margin || 1,
     color: {
       dark: options.color?.dark || '#000000',
       light: options.color?.light || '#FFFFFF'
     },
-    errorCorrectionLevel: options.errorCorrectionLevel || 'M' as const
+    errorCorrectionLevel: options.errorCorrectionLevel || 'H' as const
   }
   
   try {
@@ -111,13 +137,13 @@ export async function generateQRCodeSVG(
   const qrData = createQRData(metadata)
   
   const qrOptions = {
-    width: options.width || 512,
-    margin: options.margin || 4,
+    width: options.width || 1024,
+    margin: options.margin || 1,
     color: {
       dark: options.color?.dark || '#000000',
       light: options.color?.light || '#FFFFFF'
     },
-    errorCorrectionLevel: options.errorCorrectionLevel || 'M' as const
+    errorCorrectionLevel: options.errorCorrectionLevel || 'H' as const
   }
   
   try {

@@ -46,19 +46,41 @@ export function QRScanner({
       qrScannerRef.current.stop();
     }
 
-    // Step 1: Show verifying state
+    // Step 1: Extract and validate QR metadata locally first
+    console.log('🔍 Scanned QR Code:', qrCode);
+    
+    const metadata = extractQRMetadata(qrCode.trim());
+    if (!metadata) {
+      setScanState("error");
+      setError("Invalid QR code format. Please scan a Token Crunchies QR code.");
+      
+      setTimeout(() => {
+        setScanState("scanning");
+        setError("");
+        // Resume scanning
+        if (qrScannerRef.current && hasCamera) {
+          qrScannerRef.current.start();
+        }
+      }, 3000);
+      return;
+    }
+
+    console.log('✅ Extracted metadata:', metadata);
+    setExtractedMetadata(metadata);
+
+    // Step 2: Show verifying state
     setScanState("verifying");
     setError("");
 
     try {
-      // Process QR code with backend
+      // Process QR code with backend (send the original QR string)
       const processResult = await processQRCode(qrCode.trim());
 
       if (processResult.success && processResult.result) {
-        // Step 2: Show success state
+        // Step 3: Show success state
         setScanState("success");
 
-        // Step 3: Auto-navigate back after showing success
+        // Step 4: Auto-navigate back after showing success
         setTimeout(() => {
           onQRScanned(qrCode.trim());
           onClose();
@@ -72,6 +94,7 @@ export function QRScanner({
         setTimeout(() => {
           setScanState("scanning");
           setError("");
+          setExtractedMetadata(null);
           // Resume scanning
           if (qrScannerRef.current && hasCamera) {
             qrScannerRef.current.start();
@@ -85,6 +108,7 @@ export function QRScanner({
       setTimeout(() => {
         setScanState("scanning");
         setError("");
+        setExtractedMetadata(null);
         // Resume scanning
         if (qrScannerRef.current && hasCamera) {
           qrScannerRef.current.start();
@@ -173,8 +197,26 @@ export function QRScanner({
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div className="bg-white rounded-lg p-8 max-w-sm mx-4 text-center">
-          <div className="w-16 h-16 border-4 border-gray-300 border-t-black rounded-full mx-auto mb-4"></div>
+          <div className="w-16 h-16 border-4 border-gray-300 border-t-black rounded-full animate-spin mx-auto mb-4"></div>
           <h3 className="text-xl font-bold text-black mb-2">Verifying QR...</h3>
+          
+          {extractedMetadata && (
+            <div className="bg-gray-50 rounded-lg p-4 mb-4 text-left">
+              <div className="text-sm text-gray-600 mb-2">
+                <strong>Found:</strong> {extractedMetadata.name || extractedMetadata.code}
+              </div>
+              <div className="text-sm text-gray-600 mb-2">
+                <strong>Phase:</strong> {extractedMetadata.phase.replace('_', ' ')}
+              </div>
+              <div className="text-sm text-gray-600 mb-2">
+                <strong>Reward:</strong> {extractedMetadata.tokenReward} tokens
+              </div>
+              <div className="text-sm text-gray-600">
+                <strong>Rarity:</strong> {extractedMetadata.rarity}
+              </div>
+            </div>
+          )}
+          
           <p className="text-gray-600">
             Please approve the transaction in your wallet
           </p>
@@ -306,6 +348,9 @@ export function QRScanner({
         <div className="text-center mb-4">
           <p className="text-white text-sm mb-2">
             Point your camera at QR code #{expectedQR}
+          </p>
+          <p className="text-gray-400 text-xs">
+            Looking for TOKEN_CRUNCHIES:// format
           </p>
         </div>
 

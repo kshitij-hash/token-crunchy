@@ -1,0 +1,184 @@
+[
+  {
+    "sequence": 1,
+    "name": "Checkpoint Charlie",
+    "code": "TC_CHECKPOINT_ALPHA",
+    "phase": "PHASE_1",
+    "rarity": "NORMAL",
+    "tokens": 100,
+    "hint": "check in to check-out those little houses look sus... maybe check em out?",
+    "qrData": "TOKEN_CRUNCHIES://TC_CHECKPOINT_ALPHA:Checkpoint Charlie:NORMAL",
+    "files": {
+      "png": "png/qr-01-checkpoint-charlie.png",
+      "svg": "svg/qr-01-checkpoint-charlie.svg"
+    }
+  },
+  {
+    "sequence": 2,
+    "name": "Food Court Hunter",
+    "code": "TC_FOODCOURT_BETA",
+    "phase": "PHASE_1",
+    "rarity": "NORMAL",
+    "tokens": 100,
+    "hint": "grab some food and maybe grab something else too",
+    "qrData": "TOKEN_CRUNCHIES://TC_FOODCOURT_BETA:Food Court Hunter:NORMAL",
+    "files": {
+      "png": "png/qr-02-food-court-hunter.png",
+      "svg": "svg/qr-02-food-court-hunter.svg"
+    }
+  },
+  {
+    "sequence": 3,
+    "name": "Beat Drop Zone",
+    "code": "TC_BEATDROP_GAMMA",
+    "phase": "PHASE_1",
+    "rarity": "NORMAL",
+    "tokens": 100,
+    "hint": "where the beats drop, tokens might drop too",
+    "qrData": "TOKEN_CRUNCHIES://TC_BEATDROP_GAMMA:Beat Drop Zone:NORMAL",
+    "files": {
+      "png": "png/qr-03-beat-drop-zone.png",
+      "svg": "svg/qr-03-beat-drop-zone.svg"
+    }
+  },
+  {
+    "sequence": 4,
+    "name": "Trail Convergence",
+    "code": "TC_TRAILEND_DELTA",
+    "phase": "PHASE_1",
+    "rarity": "NORMAL",
+    "tokens": 100,
+    "hint": "All trails eventually crunch back here.",
+    "qrData": "TOKEN_CRUNCHIES://TC_TRAILEND_DELTA:Trail Convergence:NORMAL",
+    "files": {
+      "png": "png/qr-04-trail-convergence.png",
+      "svg": "svg/qr-04-trail-convergence.svg"
+    }
+  },
+  {
+    "sequence": 5,
+    "name": "Ocean Treasure",
+    "code": "TC_OCEANSALT_EPSILON",
+    "phase": "PHASE_1",
+    "rarity": "NORMAL",
+    "tokens": 100,
+    "hint": "go splash around the ocean, might find more than salt",
+    "qrData": "TOKEN_CRUNCHIES://TC_OCEANSALT_EPSILON:Ocean Treasure:NORMAL",
+    "files": {
+      "png": "png/qr-05-ocean-treasure.png",
+      "svg": "svg/qr-05-ocean-treasure.svg"
+    }
+  },
+  {
+    "sequence": 6,
+    "name": "Silent Watcher",
+    "code": "TC_SILENTPOND_ZETA",
+    "phase": "PHASE_1",
+    "rarity": "NORMAL",
+    "tokens": 100,
+    "hint": "A silent pond watching from the sidelines",
+    "qrData": "TOKEN_CRUNCHIES://TC_SILENTPOND_ZETA:Silent Watcher:NORMAL",
+    "files": {
+      "png": "png/qr-06-silent-watcher.png",
+      "svg": "svg/qr-06-silent-watcher.svg"
+    }
+  },
+  {
+    "sequence": 7,
+    "name": "Quiet Tails",
+    "code": "TC_SILENTTAILS_ETA",
+    "phase": "PHASE_1",
+    "rarity": "NORMAL",
+    "tokens": 100,
+    "hint": "Silent Tails",
+    "qrData": "TOKEN_CRUNCHIES://TC_SILENTTAILS_ETA:Quiet Tails:NORMAL",
+    "files": {
+      "png": "png/qr-07-quiet-tails.png",
+      "svg": "svg/qr-07-quiet-tails.svg"
+    }
+  },
+  {
+    "sequence": 8,
+    "name": "Mystery Box",
+    "code": "TC_MYSTERYBOX_THETA",
+    "phase": "PHASE_1",
+    "rarity": "NORMAL",
+    "tokens": 100,
+    "hint": "Normal Qr",
+    "qrData": "TOKEN_CRUNCHIES://TC_MYSTERYBOX_THETA:Mystery Box:NORMAL",
+    "files": {
+      "png": "png/qr-08-mystery-box.png",
+      "svg": "svg/qr-08-mystery-box.svg"
+    }
+  },
+  {
+    "sequence": 9,
+    "name": "Floating Swimmer",
+    "code": "TC_FLOATSWIM_IOTA",
+    "phase": "PHASE_2",
+    "rarity": "RARE",
+    "tokens": 250,
+    "hint": "A swimmer that only floats",
+    "qrData": "TOKEN_CRUNCHIES://TC_FLOATSWIM_IOTA:Floating Swimmer:RARE",
+    "files": {
+      "png": "png/qr-09-floating-swimmer.png",
+      "svg": "svg/qr-09-floating-swimmer.svg"
+    }
+  },
+  {
+    "sequence": 10,
+    "name": "Pocket Treasure",
+    "code": "TC_POCKETRING_KAPPA",
+    "phase": "PHASE_2",
+    "rarity": "RARE",
+    "tokens": 250,
+    "hint": "The real loot might be ringing in someone's pocket",
+    "qrData": "TOKEN_CRUNCHIES://TC_POCKETRING_KAPPA:Pocket Treasure:RARE",
+    "files": {
+      "png": "png/qr-10-pocket-treasure.png",
+      "svg": "svg/qr-10-pocket-treasure.svg"
+    }
+  },
+  {
+    "sequence": 11,
+    "name": "Godfather's Mercy",
+    "code": "TC_GODFATHER_LAMBDA",
+    "phase": "PHASE_2",
+    "rarity": "RARE",
+    "tokens": 250,
+    "hint": "Ask Godfather, maybe he can show some mercy",
+    "qrData": "TOKEN_CRUNCHIES://TC_GODFATHER_LAMBDA:Godfather's Mercy:RARE",
+    "files": {
+      "png": "png/qr-11-godfather-s-mercy.png",
+      "svg": "svg/qr-11-godfather-s-mercy.svg"
+    }
+  },
+  {
+    "sequence": 12,
+    "name": "Supreme Secrets",
+    "code": "TC_SUPREME_MU",
+    "phase": "PHASE_2",
+    "rarity": "RARE",
+    "tokens": 250,
+    "hint": "Supreme leader knows supreme secrets",
+    "qrData": "TOKEN_CRUNCHIES://TC_SUPREME_MU:Supreme Secrets:RARE",
+    "files": {
+      "png": "png/qr-12-supreme-secrets.png",
+      "svg": "svg/qr-12-supreme-secrets.svg"
+    }
+  },
+  {
+    "sequence": 13,
+    "name": "Eternal Legend",
+    "code": "TC_LEGEND_OMEGA",
+    "phase": "PHASE_3",
+    "rarity": "LEGENDARY",
+    "tokens": 500,
+    "hint": "Legend never dies",
+    "qrData": "TOKEN_CRUNCHIES://TC_LEGEND_OMEGA:Eternal Legend:LEGENDARY",
+    "files": {
+      "png": "png/qr-13-eternal-legend.png",
+      "svg": "svg/qr-13-eternal-legend.svg"
+    }
+  }
+]

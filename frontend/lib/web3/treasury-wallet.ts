@@ -97,19 +97,28 @@ export async function transferTokensToUser(
   amount: string
 ): Promise<TokenTransferResult> {
   if (!treasuryWalletClient || !treasuryWalletClient.account) {
-    throw new Web3Error('Treasury wallet client not initialized')
+    return {
+      success: false,
+      error: 'Treasury wallet client not initialized - check TREASURY_PRIVATE_KEY environment variable'
+    }
   }
 
   const tokenContractAddress = process.env.TOKEN_CONTRACT_ADDRESS as `0x${string}`
   
   if (!tokenContractAddress) {
-    throw new Web3Error('Token contract address not configured')
+    return {
+      success: false,
+      error: 'Token contract address not configured - check TOKEN_CONTRACT_ADDRESS environment variable'
+    }
   }
 
   try {
     // Validate user address
     if (!userAddress.startsWith('0x') || userAddress.length !== 42) {
-      throw new TokenTransferError('Invalid user address format')
+      return {
+        success: false,
+        error: 'Invalid user address format'
+      }
     }
 
     // Get token decimals
@@ -127,9 +136,10 @@ export async function transferTokensToUser(
     const currentTokenBalance = BigInt(balance.tokenBalance)
 
     if (currentTokenBalance < amountInUnits) {
-      throw new TokenTransferError(
-        `Insufficient token balance. Required: ${amount}, Available: ${balance.tokenBalanceFormatted}`
-      )
+      return {
+        success: false,
+        error: `Insufficient token balance. Required: ${amount}, Available: ${balance.tokenBalanceFormatted}`
+      }
     }
 
     // Check native balance for gas
@@ -137,9 +147,10 @@ export async function transferTokensToUser(
     const currentNativeBalance = BigInt(balance.nativeBalance)
 
     if (currentNativeBalance < minGasBalance) {
-      throw new TokenTransferError(
-        `Insufficient native balance for gas. Current: ${balance.nativeBalanceFormatted} MON`
-      )
+      return {
+        success: false,
+        error: `Insufficient native balance for gas. Current: ${balance.nativeBalanceFormatted} MON`
+      }
     }
 
     // Execute token transfer
