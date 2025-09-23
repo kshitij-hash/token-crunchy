@@ -236,18 +236,18 @@ async function generateQRCodeFiles() {
   const manifest = []
   
   for (const qrDef of qrCodeDefinitions) {
-    const metadata = {
+    // Create secure metadata without sequenceOrder for QR generation
+    const secureMetadata = {
       code: qrDef.code,
       name: qrDef.name,
       phase: qrDef.phase,
-      sequenceOrder: qrDef.sequenceOrder,
       rarity: qrDef.rarity,
       tokenReward: qrDef.tokenReward,
       hint: qrDef.hint
     }
     
     // Generate PNG
-    const pngDataUrl = await generateQRCode(metadata, {
+    const pngDataUrl = await generateQRCode(secureMetadata, {
       width: 2048,
       errorCorrectionLevel: 'H'
     })
@@ -258,7 +258,7 @@ async function generateQRCodeFiles() {
     await fs.writeFile(pngPath, pngBuffer)
     
     // Generate SVG
-    const svgContent = await generateQRCodeSVG(metadata, {
+    const svgContent = await generateQRCodeSVG(secureMetadata, {
       width: 2048,
       errorCorrectionLevel: 'H'
     })
@@ -279,7 +279,7 @@ async function generateQRCodeFiles() {
         png: `png/${qrDef.code}.png`,
         svg: `svg/${qrDef.code}.svg`
       },
-      qrData: createQRData(metadata)
+      qrData: createQRData(secureMetadata)
     })
     
     console.log(`✅ Generated files for ${qrDef.code}`)
@@ -362,7 +362,6 @@ async function generatePreviewHTML() {
                               code: qr.code,
                               name: qr.name,
                               phase: qr.phase,
-                              sequenceOrder: qr.sequenceOrder,
                               rarity: qr.rarity,
                               tokenReward: qr.tokenReward,
                               hint: qr.hint
