@@ -5,78 +5,103 @@ const prisma = new PrismaClient()
 async function main() {
   console.log('🌱 Starting database seed...')
 
-  // First, let's create the QR codes for Phase 1 with hints
+  // Phase 1 - Normal QR codes with new hints (100 tokens each)
+  // Using random codes to prevent sequence guessing
   const qrCodesWithHints = [
     {
-      code: 'MYSTERY_QR_001',
-      name: 'First Discovery',
+      code: 'CRUNCH_7X9K',
+      name: 'Check-in Counter',
       phase: GamePhase.PHASE_1,
       sequenceOrder: 1,
       rarity: QRRarity.NORMAL,
       tokenReward: '100',
       hint: {
-        title: 'The Welcome Mat',
-        content: 'Where visitors first arrive, they probably have more than just room keys'
+        title: 'Location Hint',
+        content: 'check in to check-out:eyes:'
       }
     },
     {
-      code: 'MYSTERY_QR_002',
-      name: 'Hidden Homes',
+      code: 'TOKEN_M4R8',
+      name: 'Suspicious Houses',
       phase: GamePhase.PHASE_1,
       sequenceOrder: 2,
       rarity: QRRarity.NORMAL,
       tokenReward: '100',
       hint: {
-        title: 'Tiny Treasures',
-        content: 'Those little houses look sus... maybe check em out?'
+        title: 'Location Hint',
+        content: 'those little houses look sus... maybe check em out?'
       }
     },
     {
-      code: 'MYSTERY_QR_003',
-      name: 'Aquatic Adventure',
+      code: 'HUNT_3P5L',
+      name: 'Food Court Secret',
       phase: GamePhase.PHASE_1,
       sequenceOrder: 3,
       rarity: QRRarity.NORMAL,
       tokenReward: '100',
       hint: {
-        title: 'Splash Zone',
-        content: 'Go splash around the big pool, might find more than chlorine'
+        title: 'Location Hint',
+        content: 'grab some food and maybe grab something else too :eyes:'
       }
     },
     {
-      code: 'MYSTERY_QR_004',
-      name: 'Hunger Station',
+      code: 'BEAT_9W2N',
+      name: 'Beat Drop Zone',
       phase: GamePhase.PHASE_1,
       sequenceOrder: 4,
       rarity: QRRarity.NORMAL,
       tokenReward: '100',
       hint: {
-        title: 'Feast Mode',
-        content: 'Grab some food and maybe grab something else too'
+        title: 'Location Hint',
+        content: 'where the beats drop, tokens might drop too :musical_note:'
       }
     },
     {
-      code: 'MYSTERY_QR_005',
-      name: 'Beat Drop Zone',
+      code: 'TRAIL_6H4Q',
+      name: 'Trail Convergence',
       phase: GamePhase.PHASE_1,
       sequenceOrder: 5,
       rarity: QRRarity.NORMAL,
       tokenReward: '100',
       hint: {
-        title: 'Sound Waves',
-        content: 'Where the beats drop, tokens might drop too (near the big splash)'
+        title: 'Location Hint',
+        content: 'All trails eventually crunch back here.'
       }
     },
     {
-      code: 'MYSTERY_QR_006',
-      name: 'Central Command',
+      code: 'OCEAN_8F1V',
+      name: 'Ocean Splash',
       phase: GamePhase.PHASE_1,
       sequenceOrder: 6,
       rarity: QRRarity.NORMAL,
       tokenReward: '100',
       hint: {
-        title: 'All Roads Lead Here',
-        content: 'Where all roads lead...'
+        title: 'Location Hint',
+        content: 'go splash around the ocean, might find more than salt'
+      }
+    },
+    {
+      code: 'POND_5T7R',
+      name: 'Silent Pond Watcher',
+      phase: GamePhase.PHASE_1,
+      sequenceOrder: 7,
+      rarity: QRRarity.NORMAL,
+      tokenReward: '100',
+      hint: {
+        title: 'Location Hint',
+        content: 'A silent pond watching from the sidelines'
+      }
+    },
+    {
+      code: 'TAIL_2K9S',
+      name: 'Silent Tails',
+      phase: GamePhase.PHASE_1,
+      sequenceOrder: 8,
+      rarity: QRRarity.NORMAL,
+      tokenReward: '100',
+      hint: {
+        title: 'Location Hint',
+        content: 'Silent Tails'
       }
     }
   ]
@@ -139,118 +164,56 @@ async function main() {
     console.log(`✅ Created QR code: ${qrCode.name} with hint: "${qrCode.hint?.content}"`)
   }
 
-  // Add placeholder QR codes for remaining Phase 1 slots (7-8)
-  const remainingPhase1QRs = [
-    {
-      code: 'PHASE1_QR_007',
-      name: 'Mystery Location 7',
-      phase: GamePhase.PHASE_1,
-      sequenceOrder: 7,
-      rarity: QRRarity.NORMAL,
-      tokenReward: '100',
-      hint: {
-        title: 'Mystery Location 7',
-        content: 'Hint for location 7 will be revealed soon...'
-      }
-    },
-    {
-      code: 'PHASE1_QR_008',
-      name: 'Mystery Location 8',
-      phase: GamePhase.PHASE_1,
-      sequenceOrder: 8,
-      rarity: QRRarity.NORMAL,
-      tokenReward: '100',
-      hint: {
-        title: 'Mystery Location 8',
-        content: 'Hint for location 8 will be revealed soon...'
-      }
-    }
-  ]
 
-  for (const qrData of remainingPhase1QRs) {
-    const { hint, ...qrCodeData } = qrData
-    
-    const existingQR = await prisma.qRCode.findFirst({
-      where: {
-        OR: [
-          { code: qrCodeData.code },
-          { 
-            phase: qrCodeData.phase,
-            sequenceOrder: qrCodeData.sequenceOrder
-          }
-        ]
-      },
-      include: { hint: true }
-    })
-
-    if (existingQR) {
-      console.log(`⏭️  QR code ${qrCodeData.name} already exists, skipping...`)
-      continue
-    }
-
-    const qrCode = await prisma.qRCode.create({
-      data: {
-        ...qrCodeData,
-        hint: {
-          create: hint
-        }
-      },
-      include: {
-        hint: true
-      }
-    })
-
-    console.log(`✅ Created placeholder QR code: ${qrCode.name}`)
-  }
-
-  // Add Phase 2 QR codes (rare)
+  // Phase 2 - Rare QR codes with new hints (250 tokens each)
+  // Using random codes to prevent sequence guessing
   const phase2QRs = [
     {
-      code: 'PHASE2_RARE_001',
-      name: 'Rare Location 1',
+      code: 'FLOAT_X7M3',
+      name: 'Floating Swimmer',
       phase: GamePhase.PHASE_2,
-      sequenceOrder: 1,
+      sequenceOrder: 9,
       rarity: QRRarity.RARE,
       tokenReward: '250',
       hint: {
-        title: 'Rare Location 1',
-        content: 'This rare location requires completing Phase 1 first...'
+        title: 'Location Hint',
+        content: 'A swimmer that only floats'
       }
     },
     {
-      code: 'PHASE2_RARE_002',
-      name: 'Rare Location 2',
+      code: 'RING_K9P4',
+      name: 'Pocket Loot',
       phase: GamePhase.PHASE_2,
-      sequenceOrder: 2,
+      sequenceOrder: 10,
       rarity: QRRarity.RARE,
       tokenReward: '250',
       hint: {
-        title: 'Rare Location 2',
-        content: 'Another rare location awaits the dedicated hunters...'
+        title: 'Location Hint',
+        content: 'The real loot might be ringing in someone\'s pocket'
       }
     },
     {
-      code: 'PHASE2_RARE_003',
-      name: 'Rare Location 3',
+      code: 'MERCY_L2W8',
+      name: 'Godfather\'s Mercy',
       phase: GamePhase.PHASE_2,
-      sequenceOrder: 3,
+      sequenceOrder: 11,
       rarity: QRRarity.RARE,
       tokenReward: '250',
       hint: {
-        title: 'Rare Location 3',
-        content: 'The third rare location holds special secrets...'
+        title: 'Location Hint',
+        content: 'Ask Godfather, maybe he can show some mercy'
       }
     },
     {
-      code: 'PHASE2_RARE_004',
-      name: 'Rare Location 4',
+      code: 'SUPREME_V5N1',
+      name: 'Supreme Secrets',
       phase: GamePhase.PHASE_2,
-      sequenceOrder: 4,
+      sequenceOrder: 12,
       rarity: QRRarity.RARE,
       tokenReward: '250',
       hint: {
-        title: 'Rare Location 4',
-        content: 'The final rare location of Phase 2...'
+        title: 'Location Hint',
+        content: 'Supreme leader knows supreme secrets'
       }
     }
   ]
@@ -291,17 +254,18 @@ async function main() {
     console.log(`✅ Created rare QR code: ${qrCode.name}`)
   }
 
-  // Add Phase 3 QR code (legendary)
+  // Phase 3 - Legendary QR code with new hint (500 tokens)
+  // Using random code to prevent sequence guessing
   const phase3QR = {
-    code: 'PHASE3_LEGENDARY_001',
-    name: 'Legendary Location',
+    code: 'LEGEND_Z8Q6',
+    name: 'Legend Never Dies',
     phase: GamePhase.PHASE_3,
-    sequenceOrder: 1,
+    sequenceOrder: 13,
     rarity: QRRarity.LEGENDARY,
     tokenReward: '500',
     hint: {
-      title: 'Legendary Location',
-      content: 'The legendary location will be revealed at the IRL event...'
+      title: 'Location Hint',
+      content: 'Legend never dies'
     }
   }
 

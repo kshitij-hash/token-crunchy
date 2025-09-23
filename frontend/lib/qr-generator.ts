@@ -6,7 +6,7 @@ export interface QRMetadata {
   name: string
   description?: string
   phase: GamePhase
-  sequenceOrder: number
+  sequenceOrder: number // Only used internally, NOT in QR data
   rarity: QRRarity
   tokenReward: string
   hint?: {
@@ -16,6 +16,20 @@ export interface QRMetadata {
   // Additional metadata for verification
   timestamp: number
   version: string
+}
+
+// Secure QR metadata for generation (excludes sequence for security)
+export interface SecureQRMetadata {
+  code: string
+  name: string
+  description?: string
+  phase: GamePhase
+  rarity: QRRarity
+  tokenReward: string
+  hint?: {
+    title: string
+    content: string
+  }
 }
 
 export interface QRGenerationOptions {
@@ -30,11 +44,12 @@ export interface QRGenerationOptions {
 
 /**
  * Creates a QR code data string with minimal essential metadata
- * Uses a simple format: TOKEN_CRUNCHIES://[code]:[phase]:[sequence]:[reward]
+ * Uses a simple format: TOKEN_CRUNCHIES://[code]:[phase]:[reward]:[rarity]
+ * NOTE: Sequence number is NOT included to prevent users from extracting and arranging QR codes
  */
-export function createQRData(metadata: Omit<QRMetadata, 'timestamp' | 'version'>): string {
-  // For better scannability, use minimal data format
-  const minimalData = `${metadata.code}:${metadata.phase}:${metadata.sequenceOrder}:${metadata.tokenReward}:${metadata.rarity}`
+export function createQRData(metadata: SecureQRMetadata): string {
+  // For better scannability, use minimal data format (NO SEQUENCE NUMBER for security)
+  const minimalData = `${metadata.code}:${metadata.phase}:${metadata.tokenReward}:${metadata.rarity}`
 
   // If hint is provided, add it but keep it simple
   if (metadata.hint) {
@@ -47,6 +62,8 @@ export function createQRData(metadata: Omit<QRMetadata, 'timestamp' | 'version'>
 
 /**
  * Extracts metadata from a QR code data string
+ * NEW FORMAT: TOKEN_CRUNCHIES://[code]:[phase]:[reward]:[rarity]:[hint]
+ * NOTE: Sequence number is NOT included in QR data for security
  */
 export function extractQRMetadata(qrData: string): QRMetadata | null {
   try {
@@ -59,21 +76,20 @@ export function extractQRMetadata(qrData: string): QRMetadata | null {
     const dataPart = qrData.replace('TOKEN_CRUNCHIES://', '')
     const parts = dataPart.split(':')
 
-    if (parts.length < 5) {
+    if (parts.length < 4) {
       throw new Error('Invalid QR data format')
     }
 
-    // Parse the essential data
+    // Parse the essential data (NO SEQUENCE NUMBER)
     const code = parts[0]
     const phase = parts[1] as 'PHASE_1' | 'PHASE_2' | 'PHASE_3'
-    const sequenceOrder = parseInt(parts[2])
-    const tokenReward = parts[3]
-    const rarity = parts[4] as 'NORMAL' | 'RARE' | 'LEGENDARY'
+    const tokenReward = parts[2]
+    const rarity = parts[3] as 'NORMAL' | 'RARE' | 'LEGENDARY'
 
-    // Extract hint if present (everything after the 5th colon)
+    // Extract hint if present (everything after the 4th colon)
     let hint = undefined
-    if (parts.length > 5) {
-      const hintText = parts.slice(5).join(':').replace(/;/g, ':')
+    if (parts.length > 4) {
+      const hintText = parts.slice(4).join(':').replace(/;/g, ':')
       // We'll need to look up the full hint from database based on code
       hint = {
         title: 'Location Hint',
@@ -85,7 +101,7 @@ export function extractQRMetadata(qrData: string): QRMetadata | null {
       code,
       name: `QR Code ${code}`, // This will be looked up from database
       phase,
-      sequenceOrder,
+      sequenceOrder: 0, // Will be looked up from database, not from QR
       rarity,
       tokenReward,
       hint,
@@ -104,7 +120,7 @@ export function extractQRMetadata(qrData: string): QRMetadata | null {
  * Generates a QR code image as data URL
  */
 export async function generateQRCode(
-  metadata: Omit<QRMetadata, 'timestamp' | 'version'>,
+  metadata: SecureQRMetadata,
   options: QRGenerationOptions = {}
 ): Promise<string> {
   const qrData = createQRData(metadata)
@@ -131,7 +147,7 @@ export async function generateQRCode(
  * Generates a QR code as SVG string
  */
 export async function generateQRCodeSVG(
-  metadata: Omit<QRMetadata, 'timestamp' | 'version'>,
+  metadata: SecureQRMetadata,
   options: QRGenerationOptions = {}
 ): Promise<string> {
   const qrData = createQRData(metadata)
@@ -193,18 +209,13 @@ export function validateQRMetadata(
  * Creates a display-friendly QR code with metadata overlay
  */
 export async function generateDisplayQRCode(
-  metadata: Omit<QRMetadata, 'timestamp' | 'version'>,
+  metadata: SecureQRMetadata,
   options: QRGenerationOptions = {}
-): Promise<{ qrCodeDataUrl: string; metadata: QRMetadata }> {
+): Promise<{ qrCodeDataUrl: string; metadata: SecureQRMetadata }> {
   const qrCodeDataUrl = await generateQRCode(metadata, options)
-  const fullMetadata: QRMetadata = {
-    ...metadata,
-    timestamp: Date.now(),
-    version: '1.0'
-  }
   
   return {
     qrCodeDataUrl,
-    metadata: fullMetadata
+    metadata: metadata
   }
 }

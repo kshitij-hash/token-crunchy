@@ -1,0 +1,356 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Token Crunchies QR Codes - Secure Version</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .header { text-align: center; margin-bottom: 30px; }
+        .security-notice { background: #e8f5e8; border: 2px solid #4caf50; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
+        .phase { margin-bottom: 40px; }
+        .phase-title { color: #333; border-bottom: 2px solid #ddd; padding-bottom: 10px; }
+        .qr-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+        .qr-card { background: white; border-radius: 8px; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .qr-image { text-align: center; margin-bottom: 15px; }
+        .qr-image img { max-width: 200px; height: 200px; border: 1px solid #ddd; }
+        .qr-info h3 { margin: 0 0 10px 0; color: #333; }
+        .qr-details { font-size: 14px; color: #666; margin-bottom: 10px; }
+        .hint { background: #fff3cd; border: 1px solid #ffeaa7; padding: 10px; border-radius: 4px; font-style: italic; }
+        .rarity-normal { border-left: 4px solid #28a745; }
+        .rarity-rare { border-left: 4px solid #ffc107; }
+        .rarity-legendary { border-left: 4px solid #dc3545; }
+        .qr-data { font-family: monospace; font-size: 12px; background: #f8f9fa; padding: 8px; border-radius: 4px; word-break: break-all; margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎯 Token Crunchies QR Codes</h1>
+            <p><strong>Secure Version - No Sequence Numbers in QR Data</strong></p>
+        </div>
+        
+        <div class="security-notice">
+            <h3>🔒 Security Enhancement</h3>
+            <p><strong>Fixed:</strong> Sequence numbers are no longer included in QR code metadata to prevent users from extracting and arranging QR codes without finding them physically.</p>
+            <p><strong>New Format:</strong> TOKEN_CRUNCHIES://[code]:[phase]:[reward]:[rarity]:[hint]</p>
+        </div>
+
+        
+        <div class="phase">
+            <h2 class="phase-title">PHASE 1 - NORMAL QRs (100 tokens each)</h2>
+            <div class="qr-grid">
+                
+                <div class="qr-card rarity-normal">
+                    <div class="qr-image">
+                        <img src="png/CRUNCH_7X9K.png" alt="Check-in Counter" />
+                    </div>
+                    <div class="qr-info">
+                        <h3>Check-in Counter</h3>
+                        <div class="qr-details">
+                            <strong>Code:</strong> CRUNCH_7X9K<br>
+                            <strong>Phase:</strong> PHASE_1<br>
+                            <strong>Sequence:</strong> #1<br>
+                            <strong>Rarity:</strong> NORMAL<br>
+                            <strong>Reward:</strong> 100 tokens
+                        </div>
+                        <div class="hint">
+                            <strong>Hint:</strong> check in to check-out:eyes:
+                        </div>
+                        <div class="qr-data">
+                            <strong>QR Data:</strong> TOKEN_CRUNCHIES://CRUNCH_7X9K:PHASE_1:100:NORMAL:check in to check-out;eyes;
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="qr-card rarity-normal">
+                    <div class="qr-image">
+                        <img src="png/TOKEN_M4R8.png" alt="Suspicious Houses" />
+                    </div>
+                    <div class="qr-info">
+                        <h3>Suspicious Houses</h3>
+                        <div class="qr-details">
+                            <strong>Code:</strong> TOKEN_M4R8<br>
+                            <strong>Phase:</strong> PHASE_1<br>
+                            <strong>Sequence:</strong> #2<br>
+                            <strong>Rarity:</strong> NORMAL<br>
+                            <strong>Reward:</strong> 100 tokens
+                        </div>
+                        <div class="hint">
+                            <strong>Hint:</strong> those little houses look sus... maybe check em out?
+                        </div>
+                        <div class="qr-data">
+                            <strong>QR Data:</strong> TOKEN_CRUNCHIES://TOKEN_M4R8:PHASE_1:100:NORMAL:those little houses look sus... maybe check em out?
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="qr-card rarity-normal">
+                    <div class="qr-image">
+                        <img src="png/HUNT_3P5L.png" alt="Food Court Secret" />
+                    </div>
+                    <div class="qr-info">
+                        <h3>Food Court Secret</h3>
+                        <div class="qr-details">
+                            <strong>Code:</strong> HUNT_3P5L<br>
+                            <strong>Phase:</strong> PHASE_1<br>
+                            <strong>Sequence:</strong> #3<br>
+                            <strong>Rarity:</strong> NORMAL<br>
+                            <strong>Reward:</strong> 100 tokens
+                        </div>
+                        <div class="hint">
+                            <strong>Hint:</strong> grab some food and maybe grab something else too :eyes:
+                        </div>
+                        <div class="qr-data">
+                            <strong>QR Data:</strong> TOKEN_CRUNCHIES://HUNT_3P5L:PHASE_1:100:NORMAL:grab some food and maybe grab something else too ;eyes;
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="qr-card rarity-normal">
+                    <div class="qr-image">
+                        <img src="png/BEAT_9W2N.png" alt="Beat Drop Zone" />
+                    </div>
+                    <div class="qr-info">
+                        <h3>Beat Drop Zone</h3>
+                        <div class="qr-details">
+                            <strong>Code:</strong> BEAT_9W2N<br>
+                            <strong>Phase:</strong> PHASE_1<br>
+                            <strong>Sequence:</strong> #4<br>
+                            <strong>Rarity:</strong> NORMAL<br>
+                            <strong>Reward:</strong> 100 tokens
+                        </div>
+                        <div class="hint">
+                            <strong>Hint:</strong> where the beats drop, tokens might drop too :musical_note:
+                        </div>
+                        <div class="qr-data">
+                            <strong>QR Data:</strong> TOKEN_CRUNCHIES://BEAT_9W2N:PHASE_1:100:NORMAL:where the beats drop, tokens might drop too ;musical_note;
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="qr-card rarity-normal">
+                    <div class="qr-image">
+                        <img src="png/TRAIL_6H4Q.png" alt="Trail Convergence" />
+                    </div>
+                    <div class="qr-info">
+                        <h3>Trail Convergence</h3>
+                        <div class="qr-details">
+                            <strong>Code:</strong> TRAIL_6H4Q<br>
+                            <strong>Phase:</strong> PHASE_1<br>
+                            <strong>Sequence:</strong> #5<br>
+                            <strong>Rarity:</strong> NORMAL<br>
+                            <strong>Reward:</strong> 100 tokens
+                        </div>
+                        <div class="hint">
+                            <strong>Hint:</strong> All trails eventually crunch back here.
+                        </div>
+                        <div class="qr-data">
+                            <strong>QR Data:</strong> TOKEN_CRUNCHIES://TRAIL_6H4Q:PHASE_1:100:NORMAL:All trails eventually crunch back here.
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="qr-card rarity-normal">
+                    <div class="qr-image">
+                        <img src="png/OCEAN_8F1V.png" alt="Ocean Splash" />
+                    </div>
+                    <div class="qr-info">
+                        <h3>Ocean Splash</h3>
+                        <div class="qr-details">
+                            <strong>Code:</strong> OCEAN_8F1V<br>
+                            <strong>Phase:</strong> PHASE_1<br>
+                            <strong>Sequence:</strong> #6<br>
+                            <strong>Rarity:</strong> NORMAL<br>
+                            <strong>Reward:</strong> 100 tokens
+                        </div>
+                        <div class="hint">
+                            <strong>Hint:</strong> go splash around the ocean, might find more than salt
+                        </div>
+                        <div class="qr-data">
+                            <strong>QR Data:</strong> TOKEN_CRUNCHIES://OCEAN_8F1V:PHASE_1:100:NORMAL:go splash around the ocean, might find more than salt
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="qr-card rarity-normal">
+                    <div class="qr-image">
+                        <img src="png/POND_5T7R.png" alt="Silent Pond Watcher" />
+                    </div>
+                    <div class="qr-info">
+                        <h3>Silent Pond Watcher</h3>
+                        <div class="qr-details">
+                            <strong>Code:</strong> POND_5T7R<br>
+                            <strong>Phase:</strong> PHASE_1<br>
+                            <strong>Sequence:</strong> #7<br>
+                            <strong>Rarity:</strong> NORMAL<br>
+                            <strong>Reward:</strong> 100 tokens
+                        </div>
+                        <div class="hint">
+                            <strong>Hint:</strong> A silent pond watching from the sidelines
+                        </div>
+                        <div class="qr-data">
+                            <strong>QR Data:</strong> TOKEN_CRUNCHIES://POND_5T7R:PHASE_1:100:NORMAL:A silent pond watching from the sidelines
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="qr-card rarity-normal">
+                    <div class="qr-image">
+                        <img src="png/TAIL_2K9S.png" alt="Silent Tails" />
+                    </div>
+                    <div class="qr-info">
+                        <h3>Silent Tails</h3>
+                        <div class="qr-details">
+                            <strong>Code:</strong> TAIL_2K9S<br>
+                            <strong>Phase:</strong> PHASE_1<br>
+                            <strong>Sequence:</strong> #8<br>
+                            <strong>Rarity:</strong> NORMAL<br>
+                            <strong>Reward:</strong> 100 tokens
+                        </div>
+                        <div class="hint">
+                            <strong>Hint:</strong> Silent Tails
+                        </div>
+                        <div class="qr-data">
+                            <strong>QR Data:</strong> TOKEN_CRUNCHIES://TAIL_2K9S:PHASE_1:100:NORMAL:Silent Tails
+                        </div>
+                    </div>
+                </div>
+                
+            </div>
+        </div>
+        
+        <div class="phase">
+            <h2 class="phase-title">PHASE 2 - RARE QRs (250 tokens each)</h2>
+            <div class="qr-grid">
+                
+                <div class="qr-card rarity-rare">
+                    <div class="qr-image">
+                        <img src="png/FLOAT_X7M3.png" alt="Floating Swimmer" />
+                    </div>
+                    <div class="qr-info">
+                        <h3>Floating Swimmer</h3>
+                        <div class="qr-details">
+                            <strong>Code:</strong> FLOAT_X7M3<br>
+                            <strong>Phase:</strong> PHASE_2<br>
+                            <strong>Sequence:</strong> #9<br>
+                            <strong>Rarity:</strong> RARE<br>
+                            <strong>Reward:</strong> 250 tokens
+                        </div>
+                        <div class="hint">
+                            <strong>Hint:</strong> A swimmer that only floats
+                        </div>
+                        <div class="qr-data">
+                            <strong>QR Data:</strong> TOKEN_CRUNCHIES://FLOAT_X7M3:PHASE_2:250:RARE:A swimmer that only floats
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="qr-card rarity-rare">
+                    <div class="qr-image">
+                        <img src="png/RING_K9P4.png" alt="Pocket Loot" />
+                    </div>
+                    <div class="qr-info">
+                        <h3>Pocket Loot</h3>
+                        <div class="qr-details">
+                            <strong>Code:</strong> RING_K9P4<br>
+                            <strong>Phase:</strong> PHASE_2<br>
+                            <strong>Sequence:</strong> #10<br>
+                            <strong>Rarity:</strong> RARE<br>
+                            <strong>Reward:</strong> 250 tokens
+                        </div>
+                        <div class="hint">
+                            <strong>Hint:</strong> The real loot might be ringing in someone's pocket
+                        </div>
+                        <div class="qr-data">
+                            <strong>QR Data:</strong> TOKEN_CRUNCHIES://RING_K9P4:PHASE_2:250:RARE:The real loot might be ringing in someone's pocket
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="qr-card rarity-rare">
+                    <div class="qr-image">
+                        <img src="png/MERCY_L2W8.png" alt="Godfather's Mercy" />
+                    </div>
+                    <div class="qr-info">
+                        <h3>Godfather's Mercy</h3>
+                        <div class="qr-details">
+                            <strong>Code:</strong> MERCY_L2W8<br>
+                            <strong>Phase:</strong> PHASE_2<br>
+                            <strong>Sequence:</strong> #11<br>
+                            <strong>Rarity:</strong> RARE<br>
+                            <strong>Reward:</strong> 250 tokens
+                        </div>
+                        <div class="hint">
+                            <strong>Hint:</strong> Ask Godfather, maybe he can show some mercy
+                        </div>
+                        <div class="qr-data">
+                            <strong>QR Data:</strong> TOKEN_CRUNCHIES://MERCY_L2W8:PHASE_2:250:RARE:Ask Godfather, maybe he can show some mercy
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="qr-card rarity-rare">
+                    <div class="qr-image">
+                        <img src="png/SUPREME_V5N1.png" alt="Supreme Secrets" />
+                    </div>
+                    <div class="qr-info">
+                        <h3>Supreme Secrets</h3>
+                        <div class="qr-details">
+                            <strong>Code:</strong> SUPREME_V5N1<br>
+                            <strong>Phase:</strong> PHASE_2<br>
+                            <strong>Sequence:</strong> #12<br>
+                            <strong>Rarity:</strong> RARE<br>
+                            <strong>Reward:</strong> 250 tokens
+                        </div>
+                        <div class="hint">
+                            <strong>Hint:</strong> Supreme leader knows supreme secrets
+                        </div>
+                        <div class="qr-data">
+                            <strong>QR Data:</strong> TOKEN_CRUNCHIES://SUPREME_V5N1:PHASE_2:250:RARE:Supreme leader knows supreme secrets
+                        </div>
+                    </div>
+                </div>
+                
+            </div>
+        </div>
+        
+        <div class="phase">
+            <h2 class="phase-title">PHASE 3 - LEGENDARY QRs (500 tokens each)</h2>
+            <div class="qr-grid">
+                
+                <div class="qr-card rarity-legendary">
+                    <div class="qr-image">
+                        <img src="png/LEGEND_Z8Q6.png" alt="Legend Never Dies" />
+                    </div>
+                    <div class="qr-info">
+                        <h3>Legend Never Dies</h3>
+                        <div class="qr-details">
+                            <strong>Code:</strong> LEGEND_Z8Q6<br>
+                            <strong>Phase:</strong> PHASE_3<br>
+                            <strong>Sequence:</strong> #13<br>
+                            <strong>Rarity:</strong> LEGENDARY<br>
+                            <strong>Reward:</strong> 500 tokens
+                        </div>
+                        <div class="hint">
+                            <strong>Hint:</strong> Legend never dies
+                        </div>
+                        <div class="qr-data">
+                            <strong>QR Data:</strong> TOKEN_CRUNCHIES://LEGEND_Z8Q6:PHASE_3:500:LEGENDARY:Legend never dies
+                        </div>
+                    </div>
+                </div>
+                
+            </div>
+        </div>
+        
+        
+        <div style="text-align: center; margin-top: 40px; color: #666;">
+            <p>Generated on 9/23/2025, 11:14:49 AM</p>
+            <p>Total QR Codes: 13</p>
+        </div>
+    </div>
+</body>
+</html>

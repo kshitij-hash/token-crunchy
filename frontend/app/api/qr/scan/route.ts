@@ -6,6 +6,13 @@ import { prisma } from '../../../../lib/prisma'
 import { transferTokensToUser } from '../../../../lib/web3/treasury-wallet'
 import { extractQRMetadata } from '../../../../lib/qr-generator'
 
+// Helper function to convert numbers to ordinals (1st, 2nd, 3rd, etc.)
+function getOrdinal(num: number): string {
+  const suffixes = ['th', 'st', 'nd', 'rd']
+  const remainder = num % 100
+  return num + (suffixes[(remainder - 20) % 10] || suffixes[remainder] || suffixes[0])
+}
+
 export const POST = withAuth(async (request, user) => {
   try {
     // Rate limiting per user
@@ -43,9 +50,9 @@ export const POST = withAuth(async (request, user) => {
     console.log('Extracted QR metadata:', {
       code: qrMetadata.code,
       phase: qrMetadata.phase,
-      sequence: qrMetadata.sequenceOrder,
       rarity: qrMetadata.rarity,
-      reward: qrMetadata.tokenReward
+      reward: qrMetadata.tokenReward,
+      note: 'Sequence number will be looked up from database (not in QR for security)'
     })
 
     // Find the QR code in database using the extracted code
@@ -77,8 +84,8 @@ export const POST = withAuth(async (request, user) => {
     })
 
     // Validate that the scanned QR metadata matches the database record
+    // NOTE: sequenceOrder is no longer validated from QR metadata for security
     if (qrMetadata.phase !== qrCodeRecord.phase || 
-        qrMetadata.sequenceOrder !== qrCodeRecord.sequenceOrder ||
         qrMetadata.rarity !== qrCodeRecord.rarity ||
         qrMetadata.tokenReward !== qrCodeRecord.tokenReward.toString()) {
       return NextResponse.json(
@@ -197,10 +204,10 @@ export const POST = withAuth(async (request, user) => {
       console.log(`Sequential scan validation failed: Expected ${expectedSequence}, got ${qrCodeRecord.sequenceOrder}`)
       return NextResponse.json(
         { 
-          error: `Please scan QR codes in order. Expected QR #${expectedSequence}, but got QR #${qrCodeRecord.sequenceOrder}`,
+          error: `Please scan QR codes in order. You need to find the ${expectedSequence === 1 ? 'first' : getOrdinal(expectedSequence)} QR code first.`,
           expectedSequence,
           receivedSequence: qrCodeRecord.sequenceOrder,
-          hint: expectedSequence === 1 ? 'Start with the first QR code!' : `You need to scan QR #${expectedSequence} next.`
+          hint: expectedSequence === 1 ? 'Start with the first QR code!' : `You need to find the ${getOrdinal(expectedSequence)} QR code next.`
         },
         { status: 400 }
       )
