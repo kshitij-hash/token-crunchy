@@ -4,16 +4,14 @@ import { Zap, Search, Sparkles, Target, Eye } from "lucide-react";
 import { Text } from "../retroui/Text";
 import { getRarityEmoji } from "@/lib/api-client";
 
-interface QRHint {
-  content: string;
-  title?: string;
-}
-
 interface NextQR {
   name: string;
   sequenceOrder: number;
   rarity: string;
-  hint?: QRHint;
+  hint: {
+    title: string;
+    content: string;
+  } | null;
 }
 
 interface CurrentHintProps {

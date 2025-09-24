@@ -16,6 +16,17 @@ interface HuntTabProps {
 }
 
 export function HuntTab({ onScanQR, userProfile }: HuntTabProps) {
+  console.log('HuntTab render:', { 
+    hasUserProfile: !!userProfile, 
+    hasPhaseProgress: !!userProfile?.phaseProgress,
+    userProfile: userProfile ? {
+      id: userProfile.id,
+      nickname: userProfile.nickname,
+      currentPhase: userProfile.currentPhase,
+      phaseProgress: userProfile.phaseProgress
+    } : null
+  });
+
   if (!userProfile) {
     return (
       <div className="flex flex-col items-center justify-center py-12 space-y-4">
@@ -26,6 +37,16 @@ export function HuntTab({ onScanQR, userProfile }: HuntTabProps) {
   }
 
   const { phaseProgress } = userProfile;
+
+  // Safety check for phaseProgress
+  if (!phaseProgress) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 space-y-4">
+        <div className="text-4xl">⚠️</div>
+        <Text className="text-gray-600 text-center">Phase progress data is missing. Please refresh the page.</Text>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

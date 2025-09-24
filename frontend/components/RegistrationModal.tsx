@@ -6,7 +6,7 @@ import { Button } from "./retroui/Button";
 import { Text } from "./retroui/Text";
 import { Card } from "./retroui/Card";
 import { Loader } from "./retroui/Loader";
-import { useAuth } from "@/hooks/useAuth";
+import { useUser } from "@/hooks/useUser";
 import { User, Wallet, CheckCircle, AlertCircle } from "lucide-react";
 
 interface RegistrationModalProps {
@@ -18,7 +18,7 @@ interface RegistrationModalProps {
 export function RegistrationModal({ isOpen, onClose, onSuccess }: RegistrationModalProps) {
   const [nickname, setNickname] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const { register, isRegistering, walletAddress } = useAuth();
+  const { register, isRegistering, walletAddress } = useUser();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

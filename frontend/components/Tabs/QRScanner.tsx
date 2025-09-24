@@ -22,6 +22,8 @@ export function QRScanner({
 }: QRScannerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const qrScannerRef = useRef<QrScanner | null>(null);
+  const lastScannedCodeRef = useRef<string>("");
+  const lastScanTimeRef = useRef<number>(0);
   const [isScanning, setIsScanning] = useState(false);
   const [error, setError] = useState<string>("");
   const [scanState, setScanState] = useState<ScanState>("scanning");
@@ -36,10 +38,25 @@ export function QRScanner({
     clearResult
   } = useQRScanner();
 
-  const handleQRResult = async (result: QrScanner.ScanResult) => {
+  const handleQRResult = useCallback(async (result: QrScanner.ScanResult) => {
     const qrCode = result.data;
+    const now = Date.now();
     
-    if (!qrCode || isProcessing) return;
+    // Prevent duplicate scans: same QR code within 2 seconds
+    if (!qrCode || isProcessing || 
+        (lastScannedCodeRef.current === qrCode && now - lastScanTimeRef.current < 2000)) {
+      console.log('🚫 Ignoring duplicate or invalid scan:', { 
+        qrCode, 
+        isProcessing, 
+        isDuplicate: lastScannedCodeRef.current === qrCode,
+        timeSinceLastScan: now - lastScanTimeRef.current 
+      });
+      return;
+    }
+
+    // Update scan tracking
+    lastScannedCodeRef.current = qrCode;
+    lastScanTimeRef.current = now;
 
     // Stop scanning temporarily while processing - but don't destroy
     if (qrScannerRef.current) {
@@ -137,9 +154,9 @@ export function QRScanner({
         }
       }, 3000);
     }
-  };
+  }, [isProcessing, processQRCode, clearResult, hasCamera]);
 
-  const startCamera = async () => {
+  const startCamera = useCallback(async () => {
     if (!videoRef.current) return;
 
     try {
@@ -192,7 +209,7 @@ export function QRScanner({
         setError("Failed to access camera. Please check permissions.");
       }
     }
-  };
+  }, []);
 
   const stopCamera = useCallback(() => {
     if (qrScannerRef.current) {
@@ -222,7 +239,7 @@ export function QRScanner({
     return () => {
       stopCamera();
     };
-  }, [stopCamera]);
+  }, [startCamera, stopCamera]);
 
   // Verifying State
   if (scanState === "verifying") {
@@ -346,7 +363,6 @@ export function QRScanner({
       <div className="flex-1 relative">
         <video
           ref={videoRef}
-          autoPlay
           playsInline
           muted
           className="w-full h-full object-cover"

@@ -3,7 +3,7 @@
  * Handles all API communication with authentication
  */
 
-import { createAuthMessage } from './middleware/auth'
+// Authentication simplified - no longer using message signing
 
 export interface ApiResponse<T = unknown> {
   success: boolean
@@ -119,21 +119,6 @@ export interface QRScanResult {
   error?: string
 }
 
-export interface ShopItem {
-  id: string
-  name: string
-  description: string
-  price: string
-  category: string
-  image: string
-  inStock: boolean
-  maxQuantity: number
-  rarity: string
-  available: boolean
-  canAfford: boolean
-  meetsRequirements: boolean
-  requirementMessage: string | null
-}
 
 export interface QRHint {
   id: string
@@ -154,38 +139,32 @@ export interface QRHint {
 class TokenCrunchiesAPI {
   private baseUrl: string
   private walletAddress: string | null = null
-  private signMessage: ((message: string) => Promise<string>) | null = null
 
   constructor(baseUrl: string = '') {
     this.baseUrl = baseUrl
   }
 
   // Set wallet authentication
-  setAuth(walletAddress: string, signMessage: (message: string) => Promise<string>) {
+  setAuth(walletAddress: string) {
     this.walletAddress = walletAddress
-    this.signMessage = signMessage
   }
 
   // Clear authentication
   clearAuth() {
     this.walletAddress = null
-    this.signMessage = null
   }
 
   // Create authentication headers
   private async createAuthHeaders(): Promise<Record<string, string>> {
-    if (!this.walletAddress || !this.signMessage) {
-      throw new Error('Authentication not configured')
+    if (!this.walletAddress) {
+      throw new Error('Wallet address not configured')
     }
 
-    const timestamp = Date.now()
-    const message = createAuthMessage(this.walletAddress, timestamp)
-    const signature = await this.signMessage(message)
-
+    // Simplified authentication - just use wallet address
+    // The backend should authenticate based on wallet connection status
     return {
-      'x-wallet-address': this.walletAddress,
-      'x-wallet-signature': signature,
-      'x-auth-message': encodeURIComponent(message),
+      'x-wallet-address': this.walletAddress.toLowerCase(), // Ensure lowercase for consistency
+      'Authorization': `Bearer ${this.walletAddress.toLowerCase()}`, // Add Bearer token format
       'Content-Type': 'application/json'
     }
   }
@@ -276,23 +255,18 @@ class TokenCrunchiesAPI {
 
   // Authentication endpoints
   async register(nickname: string): Promise<ApiResponse<{ user: UserProfile }>> {
-    if (!this.walletAddress || !this.signMessage) {
+    if (!this.walletAddress) {
       return { success: false, error: 'Wallet not connected' }
     }
 
-    const timestamp = Date.now()
-    const message = createAuthMessage(this.walletAddress, timestamp)
-    const signature = await this.signMessage(message)
-
+    // Simplified registration - just use wallet address and nickname
     return this.request<{ user: UserProfile }>('/auth/register', {
       method: 'POST',
       body: JSON.stringify({
-        walletAddress: this.walletAddress,
-        nickname,
-        signature,
-        message
+        walletAddress: this.walletAddress.toLowerCase(),
+        nickname
       })
-    })
+    }, true) // Require auth headers for registration
   }
 
   async getProfile(): Promise<ApiResponse<{ profile: UserProfile }>> {
@@ -338,30 +312,6 @@ class TokenCrunchiesAPI {
     }, true)
   }
 
-  // Shop endpoints
-  async getShopItems(params?: {
-    category?: string
-    inStock?: boolean
-  }): Promise<ApiResponse<{
-    items: ShopItem[]
-    categories: string[]
-    userStats: {
-      totalTokens: string
-      currentPhase: string
-      qrCodesScanned: number
-    }
-  }>> {
-    const searchParams = new URLSearchParams()
-    if (params?.category) searchParams.set('category', params.category)
-    if (params?.inStock !== undefined) searchParams.set('inStock', params.inStock.toString())
-
-    const query = searchParams.toString()
-    return this.request(
-      `/shop/items${query ? `?${query}` : ''}`,
-      { method: 'GET' },
-      true
-    )
-  }
 }
 
 // Export singleton instance

@@ -1,12 +1,12 @@
 "use client";
 
-import { Home, ShoppingCart, Trophy } from "lucide-react";
+import { Home, Trophy } from "lucide-react";
 import { Tabs, TabsTriggerList, TabsTrigger } from "@/components/retroui/Tab";
 import { Text } from "../retroui/Text";
 
 interface TabNavigationProps {
-  activeTab: "home" | "shop" | "leaderboard";
-  onTabChange: (tab: "home" | "shop" | "leaderboard") => void;
+  activeTab: "home" | "leaderboard";
+  onTabChange: (tab: "home" | "leaderboard") => void;
 }
 
 export function TabNavigation({ activeTab, onTabChange }: TabNavigationProps) {
@@ -16,12 +16,6 @@ export function TabNavigation({ activeTab, onTabChange }: TabNavigationProps) {
       label: "Home",
       icon: Home,
       description: "Your dashboard",
-    },
-    {
-      id: "shop" as const,
-      label: "Shop",
-      icon: ShoppingCart,
-      description: "Redeem items",
     },
     {
       id: "leaderboard" as const,

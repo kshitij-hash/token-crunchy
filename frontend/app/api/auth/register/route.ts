@@ -2,6 +2,65 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '../../../../lib/prisma'
 import { verifyWalletSignature, checkRateLimit } from '../../../../lib/middleware/auth'
 
+// Phase progress calculation function (shared with profile route)
+async function calculatePhaseProgress(userId: string, currentPhase: string) {
+  // Get total QRs in current phase
+  const totalQRsInPhase = await prisma.qRCode.count({
+    where: {
+      phase: currentPhase as 'PHASE_1' | 'PHASE_2' | 'PHASE_3',
+      isActive: true
+    }
+  })
+
+  // Get scanned QRs in current phase
+  const scannedQRsInPhase = await prisma.userQRScan.count({
+    where: {
+      userId,
+      qrCode: {
+        phase: currentPhase as 'PHASE_1' | 'PHASE_2' | 'PHASE_3',
+        isActive: true
+      }
+    }
+  })
+
+  // Get next required QR (lowest sequence order not yet scanned)
+  const nextQR = await prisma.qRCode.findFirst({
+    where: {
+      phase: currentPhase as 'PHASE_1' | 'PHASE_2' | 'PHASE_3',
+      isActive: true,
+      scannedBy: {
+        none: {
+          userId
+        }
+      }
+    },
+    orderBy: {
+      sequenceOrder: 'asc'
+    },
+    select: {
+      id: true,
+      name: true,
+      sequenceOrder: true,
+      rarity: true,
+      hint: {
+        select: {
+          title: true,
+          content: true
+        }
+      }
+    }
+  })
+
+  return {
+    currentPhase,
+    totalQRs: totalQRsInPhase,
+    scannedQRs: scannedQRsInPhase,
+    progress: totalQRsInPhase > 0 ? (scannedQRsInPhase / totalQRsInPhase) * 100 : 0,
+    nextQR,
+    isPhaseComplete: scannedQRsInPhase >= totalQRsInPhase
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     // Rate limiting
@@ -18,10 +77,10 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { walletAddress, nickname, signature, message } = body
 
-    // Validate required fields
-    if (!walletAddress || !nickname || !signature || !message) {
+    // Validate required fields - support both simplified and signature-based registration
+    if (!walletAddress || !nickname) {
       return NextResponse.json(
-        { error: 'Missing required fields: walletAddress, nickname, signature, message' },
+        { error: 'Missing required fields: walletAddress, nickname' },
         { status: 400 }
       )
     }
@@ -50,15 +109,18 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Verify wallet signature
-    const signatureResult = await verifyWalletSignature(walletAddress, message, signature)
-    
-    if (!signatureResult.isValid) {
-      return NextResponse.json(
-        { error: signatureResult.error || 'Invalid signature' },
-        { status: 401 }
-      )
+    // Optional signature verification (for backward compatibility)
+    if (signature && message) {
+      const signatureResult = await verifyWalletSignature(walletAddress, message, signature)
+      
+      if (!signatureResult.isValid) {
+        return NextResponse.json(
+          { error: signatureResult.error || 'Invalid signature' },
+          { status: 401 }
+        )
+      }
     }
+    // If no signature provided, proceed with simplified registration (wallet address only)
 
     // Check if wallet address already exists
     const existingUser = await prisma.user.findUnique({
@@ -84,7 +146,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Create new user
+    // Create new user with complete profile data
     const user = await prisma.user.create({
       data: {
         walletAddress: walletAddress.toLowerCase(),
@@ -98,12 +160,34 @@ export async function POST(request: NextRequest) {
         nickname: true,
         totalTokens: true,
         qrCodesScanned: true,
-        createdAt: true
+        currentPhase: true,
+        lastScannedAt: true,
+        createdAt: true,
+        scannedQRs: {
+          select: {
+            id: true,
+            tokensEarned: true,
+            scannedAt: true,
+            transactionHash: true,
+            transferStatus: true,
+            qrCode: {
+              select: {
+                name: true,
+                rarity: true,
+                phase: true,
+                sequenceOrder: true
+              }
+            }
+          },
+          orderBy: {
+            scannedAt: 'desc'
+          }
+        }
       }
     })
 
     // Create initial leaderboard entry
-    await prisma.leaderboardEntry.create({
+    const leaderboardEntry = await prisma.leaderboardEntry.create({
       data: {
         userId: user.id,
         nickname: user.nickname,
@@ -111,14 +195,28 @@ export async function POST(request: NextRequest) {
         qrCodesScanned: 0,
         rareQRsScanned: 0,
         legendaryQRsScanned: 0
+      },
+      select: {
+        rank: true,
+        rareQRsScanned: true,
+        legendaryQRsScanned: true
       }
     })
+
+    // Calculate phase progress for new user
+    const phaseProgress = await calculatePhaseProgress(user.id, user.currentPhase)
 
     return NextResponse.json({
       success: true,
       user: {
         ...user,
-        totalTokens: user.totalTokens.toString()
+        totalTokens: user.totalTokens.toString(),
+        scannedQRs: user.scannedQRs.map(scan => ({
+          ...scan,
+          tokensEarned: scan.tokensEarned.toString()
+        })),
+        leaderboard: leaderboardEntry,
+        phaseProgress
       }
     })
 

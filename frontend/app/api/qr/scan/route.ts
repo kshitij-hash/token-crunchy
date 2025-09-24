@@ -5,6 +5,7 @@ import { withAuth, checkRateLimit } from '../../../../lib/middleware/auth'
 import { prisma } from '../../../../lib/prisma'
 import { transferTokensToUser } from '../../../../lib/web3/treasury-wallet'
 import { extractQRMetadata } from '../../../../lib/qr-generator'
+import { isWeb3Configured, getTreasuryAddress } from '../../../../lib/web3/monad-provider'
 
 // Helper function to convert numbers to ordinals (1st, 2nd, 3rd, etc.)
 function getOrdinal(num: number): string {
@@ -153,11 +154,12 @@ export const POST = withAuth(async (request, user) => {
       }
     }
 
-    // Get user's current progress
+    // Get user's current progress including current phase
     const userRecord = await prisma.user.findUnique({
       where: { id: user.id },
       select: {
         qrCodesScanned: true,
+        currentPhase: true,
         scannedQRs: {
           where: {
             userId: user.id,
@@ -171,7 +173,8 @@ export const POST = withAuth(async (request, user) => {
           select: {
             qrCode: {
               select: {
-                sequenceOrder: true
+                sequenceOrder: true,
+                phase: true
               }
             }
           }
@@ -186,8 +189,34 @@ export const POST = withAuth(async (request, user) => {
       )
     }
 
-    // Validate sequential scanning - users must scan QR codes in order
-    const expectedSequence = userRecord.scannedQRs.length + 1
+    // Validate sequential scanning - users must scan QR codes in order within their current phase
+    // Check if the QR code belongs to the user's current phase
+    if (qrCodeRecord.phase !== userRecord.currentPhase) {
+      const phaseNames = {
+        'PHASE_1': 'Phase 1: Campus Hunt',
+        'PHASE_2': 'Phase 2: Rare Treasures', 
+        'PHASE_3': 'Phase 3: Legendary Quest'
+      }
+      
+      return NextResponse.json(
+        { 
+          error: `This QR code belongs to ${phaseNames[qrCodeRecord.phase as keyof typeof phaseNames]}. You are currently in ${phaseNames[userRecord.currentPhase as keyof typeof phaseNames]}.`,
+          currentPhase: userRecord.currentPhase,
+          qrPhase: qrCodeRecord.phase,
+          hint: 'Complete your current phase first to unlock the next phase!'
+        },
+        { status: 400 }
+      )
+    }
+
+    // Get the last scanned sequence in the current phase
+    const scannedInCurrentPhase = userRecord.scannedQRs.filter(
+      scan => scan.qrCode.phase === userRecord.currentPhase
+    )
+    const expectedSequence = scannedInCurrentPhase.length > 0 
+      ? Math.max(...scannedInCurrentPhase.map(scan => scan.qrCode.sequenceOrder)) + 1
+      : (userRecord.currentPhase === 'PHASE_1' ? 1 : 
+         userRecord.currentPhase === 'PHASE_2' ? 9 : 13) // Starting sequence for each phase
     
     console.log('Sequential validation:', {
       userScannedCount: userRecord.scannedQRs.length,
@@ -210,8 +239,6 @@ export const POST = withAuth(async (request, user) => {
     }
 
     // Pre-validate Web3 configuration before creating scan record
-    const { isWeb3Configured, getTreasuryAddress } = await import('../../../../lib/web3/monad-provider')
-    
     if (!isWeb3Configured()) {
       console.log('Web3 not configured, rejecting scan')
       return NextResponse.json({
@@ -250,9 +277,10 @@ export const POST = withAuth(async (request, user) => {
           transferStatus: 'PENDING'
         }
       })
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Handle unique constraint violation (race condition)
-      if (error.code === 'P2002' && error.meta?.target?.includes('userId_qrCodeId')) {
+      const prismaError = error as { code?: string; meta?: { target?: string[] } }
+      if (prismaError.code === 'P2002' && prismaError.meta?.target?.includes('userId_qrCodeId')) {
         console.log('Race condition detected: QR code already scanned by this user')
         
         // Re-check for existing scan record
@@ -390,7 +418,9 @@ export const POST = withAuth(async (request, user) => {
       await updateLeaderboard(user.id, qrCodeRecord.rarity)
       console.log('Updated leaderboard for user:', user.id)
 
-      // No phase advancement needed in simplified sequential system
+      // Check for phase advancement
+      const phaseAdvancement = await checkPhaseAdvancement(user.id, updatedUser.qrCodesScanned)
+      console.log('Phase advancement check:', phaseAdvancement)
 
       return NextResponse.json({
         success: true,
@@ -404,6 +434,11 @@ export const POST = withAuth(async (request, user) => {
             sequenceOrder: qrCodeRecord.sequenceOrder
           }
         },
+        phaseAdvancement: phaseAdvancement.advanced ? {
+          advanced: true,
+          newPhase: phaseAdvancement.newPhase,
+          message: phaseAdvancement.message
+        } : null,
         userStats: {
           totalTokens: updatedUser.totalTokens.toString(),
           qrCodesScanned: updatedUser.qrCodesScanned
@@ -487,4 +522,60 @@ async function updateLeaderboard(userId: string, qrRarity: string) {
   }
 }
 
-// Phase advancement function removed - no longer needed in sequential system
+// Phase advancement function
+async function checkPhaseAdvancement(userId: string, totalQRsScanned: number): Promise<{
+  advanced: boolean
+  newPhase?: string
+  message?: string
+}> {
+  try {
+    // Get current user phase
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { currentPhase: true }
+    })
+
+    if (!user) {
+      return { advanced: false }
+    }
+
+    const currentPhase = user.currentPhase
+    let shouldAdvance = false
+    let newPhase = ''
+    let message = ''
+
+    // Phase advancement logic based on QR codes scanned
+    if (currentPhase === 'PHASE_1' && totalQRsScanned >= 8) {
+      // Completed Phase 1 (8 QR codes) - advance to Phase 2
+      shouldAdvance = true
+      newPhase = 'PHASE_2'
+      message = '🎉 Congratulations! You\'ve completed Phase 1 and unlocked Phase 2: Rare Treasures!'
+    } else if (currentPhase === 'PHASE_2' && totalQRsScanned >= 12) {
+      // Completed Phase 2 (4 more QR codes, total 12) - advance to Phase 3
+      shouldAdvance = true
+      newPhase = 'PHASE_3'
+      message = '🏆 Amazing! You\'ve completed Phase 2 and unlocked Phase 3: Legendary Quest!'
+    }
+
+    if (shouldAdvance) {
+      // Update user's current phase
+      await prisma.user.update({
+        where: { id: userId },
+        data: { currentPhase: newPhase as 'PHASE_1' | 'PHASE_2' | 'PHASE_3' }
+      })
+
+      console.log(`User ${userId} advanced from ${currentPhase} to ${newPhase}`)
+      
+      return {
+        advanced: true,
+        newPhase,
+        message
+      }
+    }
+
+    return { advanced: false }
+  } catch (error) {
+    console.error('Phase advancement check error:', error)
+    return { advanced: false }
+  }
+}

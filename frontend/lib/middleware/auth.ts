@@ -76,6 +76,53 @@ export async function authenticateUser(request: NextRequest): Promise<{
     const walletAddress = request.headers.get('x-wallet-address')
     const signature = request.headers.get('x-wallet-signature')
     const encodedMessage = request.headers.get('x-auth-message')
+
+    // Check for simplified authentication (wallet address only)
+    if (walletAddress && !signature && !encodedMessage) {
+      // Simplified authentication - just check if user exists with this wallet
+      if (!walletAddress.startsWith('0x') || walletAddress.length !== 42) {
+        return {
+          success: false,
+          error: {
+            error: 'Invalid wallet address format',
+            code: 'INVALID_ADDRESS'
+          }
+        }
+      }
+
+      // Find user by wallet address
+      const user = await prisma.user.findUnique({
+        where: { walletAddress: walletAddress.toLowerCase() },
+        select: {
+          id: true,
+          walletAddress: true,
+          nickname: true,
+          currentPhase: true
+        }
+      })
+
+      if (!user) {
+        return {
+          success: false,
+          error: {
+            error: 'User not found. Please register first.',
+            code: 'USER_NOT_FOUND'
+          }
+        }
+      }
+
+      return {
+        success: true,
+        user: {
+          id: user.id,
+          walletAddress: user.walletAddress,
+          nickname: user.nickname,
+          currentPhase: user.currentPhase
+        }
+      }
+    }
+
+    // Legacy signature-based authentication (fallback)
     const message = encodedMessage ? decodeURIComponent(encodedMessage) : null
 
     if (!walletAddress || !signature || !message) {
@@ -112,7 +159,7 @@ export async function authenticateUser(request: NextRequest): Promise<{
       }
     }
 
-    // Find or create user
+    // Find user
     const user = await prisma.user.findUnique({
       where: { walletAddress: walletAddress.toLowerCase() },
       select: {
@@ -132,8 +179,6 @@ export async function authenticateUser(request: NextRequest): Promise<{
         }
       }
     }
-
-    // User is active by default in simplified system
 
     return {
       success: true,

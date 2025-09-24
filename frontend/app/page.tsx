@@ -6,55 +6,40 @@ import { LoginPage } from "@/components/LoginPage";
 import { QRScanner } from "@/components/Tabs/QRScanner";
 import { TabNavigation } from "@/components/Tabs/TabNavigation";
 import { RegistrationModal } from "@/components/RegistrationModal";
-import Link from 'next/link'
-import { Info, User, Settings } from "lucide-react";
+import { Info, User } from "lucide-react";
 import { Dialog } from "@/components/retroui/Dialog";
 import { ConnectKitButton } from "connectkit";
 import { Button } from "@/components/retroui/Button";
 import { Text } from "@/components/retroui/Text";
 import { Loader } from "@/components/retroui/Loader";
 import { LeaderboardTab } from "@/components/Tabs/LeaderboardTab";
-import { ShopTab } from "@/components/Tabs/ShopTab";
 import { HuntTab } from "@/components/Tabs/HuntTab";
-import { useAuth } from "@/hooks/useAuth";
+import { useUser } from "@/hooks/useUser";
 import { formatTokens, getPhaseDisplayName } from "@/lib/api-client";
 
-interface ShopItem {
-  id: string;
-  name: string;
-  price: number;
-  category: "snack" | "drink";
-  emoji: string;
-  description: string;
-  inStock: boolean;
-}
 
 export default function Home() {
   const [showScanner, setShowScanner] = useState(false);
   const [showRegistration, setShowRegistration] = useState(false);
-  const [activeTab, setActiveTab] = useState<"home" | "shop" | "leaderboard">("home");
+  const [activeTab, setActiveTab] = useState<"home" | "leaderboard">("home");
   
   const { isConnected } = useAccount();
   const { 
-    isAuthenticated, 
-    isLoading: authLoading, 
     user, 
-    error: authError,
-    needsAuthentication,
+    isLoading, 
+    error,
     needsRegistration,
-    userExists,
-    authenticate,
     refreshProfile 
-  } = useAuth();
+  } = useUser();
 
-  // Show registration modal immediately when user needs to register
+  // Show registration modal when user needs to register
   useEffect(() => {
-    if (isConnected && !authLoading && needsRegistration && userExists === false) {
+    if (needsRegistration) {
       setShowRegistration(true);
     } else {
       setShowRegistration(false);
     }
-  }, [isConnected, authLoading, needsRegistration, userExists]);
+  }, [needsRegistration]);
 
   const handleQRScanned = (_qrCode: string) => {
     setShowScanner(false);
@@ -62,14 +47,11 @@ export default function Home() {
     refreshProfile();
   };
 
-  const handlePurchase = (_item: ShopItem) => {
-    alert(`Purchase functionality will be implemented with backend integration`);
-  };
 
-  const handleRegistrationSuccess = () => {
+  const handleRegistrationSuccess = async () => {
     setShowRegistration(false);
-    // Refresh profile to update authentication state after registration
-    refreshProfile();
+    // Force refresh profile to ensure we have complete data
+    await refreshProfile();
   };
 
   // Show login page if wallet is not connected
@@ -77,8 +59,11 @@ export default function Home() {
     return <LoginPage />;
   }
 
-  // Show loading state while authenticating
-  if (authLoading) {
+  // Debug: Log current state
+  console.log('Page state:', { isConnected, isLoading, error, needsRegistration, hasUser: !!user });
+
+  // Show loading state while checking user
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
         <div className="text-center space-y-4">
@@ -89,34 +74,20 @@ export default function Home() {
     );
   }
 
-  // Show authentication prompt when wallet is connected but not authenticated
-  if (isConnected && needsAuthentication && !isAuthenticated && !showRegistration) {
+  // Show error state if something went wrong
+  if (error && !needsRegistration) {
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
         <div className="max-w-md w-full mx-4">
           <div className="bg-white border-2 border-black rounded-lg p-6 text-center space-y-4">
-            <div className="text-4xl mb-4">🔐</div>
+            <div className="text-4xl mb-4">⚠️</div>
             <Text as="h2" className="text-xl font-bold text-black">
-              Authentication Required
+              Something went wrong
             </Text>
-            <Text className="text-gray-600">
-              Please sign a message to authenticate your wallet and access Token Crunchies.
-            </Text>
-            <Text className="text-sm text-gray-500">
-              This is free and won&apos;t cost any gas fees.
-            </Text>
-            <div className="space-y-3 pt-4">
-              <Button 
-                onClick={authenticate} 
-                className="w-full"
-                disabled={authLoading}
-              >
-                {authLoading ? 'Authenticating...' : 'Sign Message to Continue'}
-              </Button>
-              {authError && (
-                <Text className="text-red-600 text-sm">{authError}</Text>
-              )}
-            </div>
+            <Text className="text-gray-600">{error}</Text>
+            <Button onClick={() => window.location.reload()} className="w-full">
+              Try Again
+            </Button>
           </div>
         </div>
       </div>
@@ -124,7 +95,7 @@ export default function Home() {
   }
 
   // Show QR Scanner modal
-  if (showScanner && isAuthenticated) {
+  if (showScanner && user) {
     return (
       <div className="min-h-screen bg-gray-50">
         <QRScanner
@@ -184,14 +155,14 @@ export default function Home() {
                     </div>
 
                     <div className="flex items-start gap-3">
-                      <span className="text-2xl">🥤</span>
+                      <span className="text-2xl">🏆</span>
                       <div>
                         <Text as="h4" className="font-semibold text-black mb-1">
-                          Redeem & Enjoy
+                          Compete & Win
                         </Text>
                         <Text>
-                          Go to the &quot;Shop&quot; tab to use your tokens for
-                          real rewards!
+                          Check the &quot;Leaderboard&quot; to see how you rank
+                          against other players!
                         </Text>
                       </div>
                     </div>
@@ -215,15 +186,8 @@ export default function Home() {
               </Dialog.Content>
             </Dialog>
 
-            {/* QR Admin Link */}
-            <Link href="/qr-admin">
-              <Button size="icon" variant="outline" className="rounded-full">
-                <Settings className="w-5 h-5" />
-              </Button>
-            </Link>
-
             {/* User Profile Button */}
-            {isAuthenticated && user && (
+            {user && (
               <Button variant="outline" size="sm" className="flex items-center gap-2">
                 <User className="w-4 h-4" />
                 <span className="hidden sm:inline">{user.nickname}</span>
@@ -235,7 +199,7 @@ export default function Home() {
         </div>
 
         {/* User Stats Bar */}
-        {isAuthenticated && user && (
+        {user && (
           <div className="flex items-center justify-between text-sm">
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-1">
@@ -258,17 +222,10 @@ export default function Home() {
       {/* Tab Content */}
       <div className="flex-1 overflow-y-auto">
         <div className="container mx-auto px-4 py-6 max-w-2xl">
-          {activeTab === "home" && isAuthenticated && (
+          {activeTab === "home" && user && (
             <HuntTab
               scannedQRs={user?.scannedQRs || []}
               onScanQR={() => setShowScanner(true)}
-              userProfile={user}
-            />
-          )}
-          {activeTab === "shop" && isAuthenticated && (
-            <ShopTab
-              totalCrunchies={parseFloat(user?.totalTokens || '0')}
-              onPurchase={handlePurchase}
               userProfile={user}
             />
           )}
