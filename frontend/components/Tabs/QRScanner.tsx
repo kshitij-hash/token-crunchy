@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Camera, CameraOff, AlertCircle, X, CheckCircle, Coins } from "lucide-react";
 import { useQRScanner } from "@/hooks/useQRScanner";
 import { formatTokens, getRarityEmoji } from "@/lib/api-client";
-import { extractQRMetadata, validateQRMetadata, QRMetadata } from "@/lib/qr-generator";
+import { extractQRMetadata } from "@/lib/qr-generator";
 import QrScanner from "qr-scanner";
 
 interface QRScannerProps {
@@ -26,7 +26,7 @@ export function QRScanner({
   const [error, setError] = useState<string>("");
   const [scanState, setScanState] = useState<ScanState>("scanning");
   const [hasCamera, setHasCamera] = useState(false);
-  const [extractedMetadata, setExtractedMetadata] = useState<QRMetadata | null>(null);
+  const [extractedMetadata, setExtractedMetadata] = useState<{ code: string } | null>(null);
   
   const {
     isProcessing,
@@ -41,9 +41,13 @@ export function QRScanner({
     
     if (!qrCode || isProcessing) return;
 
-    // Stop scanning temporarily while processing
+    // Stop scanning temporarily while processing - but don't destroy
     if (qrScannerRef.current) {
-      qrScannerRef.current.stop();
+      try {
+        qrScannerRef.current.stop();
+      } catch (error) {
+        console.warn('Error stopping scanner:', error);
+      }
     }
 
     // Step 1: Extract and validate QR metadata locally first
@@ -57,9 +61,15 @@ export function QRScanner({
       setTimeout(() => {
         setScanState("scanning");
         setError("");
-        // Resume scanning
+        // Resume scanning safely
         if (qrScannerRef.current && hasCamera) {
-          qrScannerRef.current.start();
+          try {
+            qrScannerRef.current.start();
+          } catch (error) {
+            console.warn('Error resuming scanner:', error);
+            // If resume fails, restart camera
+            startCamera();
+          }
         }
       }, 3000);
       return;
@@ -95,9 +105,15 @@ export function QRScanner({
           setScanState("scanning");
           setError("");
           setExtractedMetadata(null);
-          // Resume scanning
+          // Resume scanning safely
           if (qrScannerRef.current && hasCamera) {
-            qrScannerRef.current.start();
+            try {
+              qrScannerRef.current.start();
+            } catch (error) {
+              console.warn('Error resuming scanner:', error);
+              // If resume fails, restart camera
+              startCamera();
+            }
           }
         }, 3000);
       }
@@ -109,9 +125,15 @@ export function QRScanner({
         setScanState("scanning");
         setError("");
         setExtractedMetadata(null);
-        // Resume scanning
+        // Resume scanning safely
         if (qrScannerRef.current && hasCamera) {
-          qrScannerRef.current.start();
+          try {
+            qrScannerRef.current.start();
+          } catch (error) {
+            console.warn('Error resuming scanner:', error);
+            // If resume fails, restart camera
+            startCamera();
+          }
         }
       }, 3000);
     }
@@ -147,8 +169,13 @@ export function QRScanner({
         }
       );
 
-      await qrScannerRef.current.start();
-      setIsScanning(true);
+      try {
+        await qrScannerRef.current.start();
+        setIsScanning(true);
+      } catch (startError) {
+        console.error('Error starting scanner:', startError);
+        throw startError;
+      }
     } catch (err) {
       console.error("Camera error:", err);
       if (err instanceof Error) {
@@ -169,9 +196,14 @@ export function QRScanner({
 
   const stopCamera = useCallback(() => {
     if (qrScannerRef.current) {
-      qrScannerRef.current.stop();
-      qrScannerRef.current.destroy();
-      qrScannerRef.current = null;
+      try {
+        qrScannerRef.current.stop();
+        qrScannerRef.current.destroy();
+      } catch (error) {
+        console.warn('Error stopping/destroying scanner:', error);
+      } finally {
+        qrScannerRef.current = null;
+      }
     }
     setIsScanning(false);
     setHasCamera(false);
@@ -203,16 +235,10 @@ export function QRScanner({
           {extractedMetadata && (
             <div className="bg-gray-50 rounded-lg p-4 mb-4 text-left">
               <div className="text-sm text-gray-600 mb-2">
-                <strong>Found:</strong> {extractedMetadata.name || extractedMetadata.code}
+                <strong>QR Code:</strong> {extractedMetadata.code}
               </div>
-              <div className="text-sm text-gray-600 mb-2">
-                <strong>Phase:</strong> {extractedMetadata.phase.replace('_', ' ')}
-              </div>
-              <div className="text-sm text-gray-600 mb-2">
-                <strong>Reward:</strong> {extractedMetadata.tokenReward} tokens
-              </div>
-              <div className="text-sm text-gray-600">
-                <strong>Rarity:</strong> {extractedMetadata.rarity}
+              <div className="text-sm text-gray-500">
+                Validating with server...
               </div>
             </div>
           )}
@@ -350,7 +376,7 @@ export function QRScanner({
             Point your camera at QR code #{expectedQR}
           </p>
           <p className="text-gray-400 text-xs">
-            Looking for TOKEN_CRUNCHIES:// format
+            Looking for random QR codes
           </p>
         </div>
 

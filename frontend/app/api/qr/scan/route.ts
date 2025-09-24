@@ -49,10 +49,7 @@ export const POST = withAuth(async (request, user) => {
 
     console.log('Extracted QR metadata:', {
       code: qrMetadata.code,
-      phase: qrMetadata.phase,
-      rarity: qrMetadata.rarity,
-      reward: qrMetadata.tokenReward,
-      note: 'Sequence number will be looked up from database (not in QR for security)'
+      note: 'All metadata (name, phase, rarity, reward, sequence) will be looked up from database - QR contains only random ID'
     })
 
     // Find the QR code in database using the extracted code
@@ -83,18 +80,12 @@ export const POST = withAuth(async (request, user) => {
       isActive: qrCodeRecord.isActive
     })
 
-    // Validate that the scanned QR metadata matches the database record
-    // NOTE: sequenceOrder is no longer validated from QR metadata for security
-    if (qrMetadata.phase !== qrCodeRecord.phase || 
-        qrMetadata.rarity !== qrCodeRecord.rarity ||
-        qrMetadata.tokenReward !== qrCodeRecord.tokenReward.toString()) {
-      return NextResponse.json(
-        { error: 'QR code metadata mismatch' },
-        { status: 400 }
-      )
-    }
+    // No client-side validation needed - QR only contains random ID
+    // All validation is done server-side for maximum security
+    console.log('QR validation: Using database record for all metadata')
 
     // Check if user already scanned this QR code
+    console.log('Checking for existing scan:', { userId: user.id, qrCodeId: qrCodeRecord.id })
     const existingScan = await prisma.userQRScan.findUnique({
       where: {
         userId_qrCodeId: {
@@ -103,6 +94,11 @@ export const POST = withAuth(async (request, user) => {
         }
       }
     })
+    console.log('Existing scan check result:', existingScan ? { 
+      id: existingScan.id, 
+      status: existingScan.transferStatus,
+      scannedAt: existingScan.scannedAt 
+    } : 'No existing scan found')
 
     if (existingScan) {
       // Check if the existing scan was successful or failed
@@ -244,14 +240,82 @@ export const POST = withAuth(async (request, user) => {
     }
 
     // Create scan record with pending transfer status
-    const scanRecord = await prisma.userQRScan.create({
-      data: {
-        userId: user.id,
-        qrCodeId: qrCodeRecord.id,
-        tokensEarned: qrCodeRecord.tokenReward,
-        transferStatus: 'PENDING'
+    let scanRecord
+    try {
+      scanRecord = await prisma.userQRScan.create({
+        data: {
+          userId: user.id,
+          qrCodeId: qrCodeRecord.id,
+          tokensEarned: qrCodeRecord.tokenReward,
+          transferStatus: 'PENDING'
+        }
+      })
+    } catch (error: any) {
+      // Handle unique constraint violation (race condition)
+      if (error.code === 'P2002' && error.meta?.target?.includes('userId_qrCodeId')) {
+        console.log('Race condition detected: QR code already scanned by this user')
+        
+        // Re-check for existing scan record
+        const existingScan = await prisma.userQRScan.findUnique({
+          where: {
+            userId_qrCodeId: {
+              userId: user.id,
+              qrCodeId: qrCodeRecord.id
+            }
+          }
+        })
+        
+        if (existingScan?.transferStatus === 'CONFIRMED') {
+          // Fetch updated user stats
+          const updatedUser = await prisma.user.findUnique({
+            where: { id: user.id },
+            select: {
+              totalTokens: true,
+              qrCodesScanned: true
+            }
+          })
+          
+          // Scan was successful - return success response
+          return NextResponse.json({
+            success: true,
+            message: 'QR code successfully scanned',
+            scan: {
+              id: existingScan.id,
+              qrCode: {
+                id: qrCodeRecord.id,
+                name: qrCodeRecord.name,
+                code: qrCodeRecord.code,
+                rarity: qrCodeRecord.rarity,
+                phase: qrCodeRecord.phase,
+                description: qrCodeRecord.hint?.content || null
+              },
+              tokensEarned: existingScan.tokensEarned.toString(),
+              scannedAt: existingScan.scannedAt,
+              transactionHash: existingScan.transactionHash,
+              transferStatus: existingScan.transferStatus
+            },
+            userStats: {
+              totalTokens: updatedUser?.totalTokens.toString() || '0',
+              qrCodesScanned: updatedUser?.qrCodesScanned || 0
+            }
+          }, { status: 200 })
+        } else {
+          return NextResponse.json({
+            success: false,
+            error: 'QR code scan already in progress',
+            message: 'This QR code is already being processed. Please wait a moment.',
+            details: {
+              reason: 'Concurrent scan attempt detected',
+              suggestion: 'Please wait and try again if needed.'
+            }
+          }, { status: 429 })
+        }
       }
-    })
+      
+      // Re-throw other database errors
+      console.error('Database error during scan record creation:', error)
+      throw error
+    }
 
     // Initiate token transfer
     let transferResult

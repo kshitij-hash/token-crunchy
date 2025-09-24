@@ -13,11 +13,21 @@ import path from 'path'
 
 const prisma = new PrismaClient()
 
-// QR Code definitions with new hints
+// Generate random QR code IDs
+function generateRandomCode(): string {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+  let result = ''
+  for (let i = 0; i < 8; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length))
+  }
+  return result
+}
+
+// QR Code definitions with random IDs
 const qrCodeDefinitions = [
   // Phase 1 - Normal QRs (100 tokens each)
   {
-    code: 'QR001',
+    code: generateRandomCode(),
     name: 'Check-in Counter',
     phase: 'PHASE_1' as const,
     sequenceOrder: 1,
@@ -29,7 +39,7 @@ const qrCodeDefinitions = [
     }
   },
   {
-    code: 'QR002',
+    code: generateRandomCode(),
     name: 'Suspicious Houses',
     phase: 'PHASE_1' as const,
     sequenceOrder: 2,
@@ -41,7 +51,7 @@ const qrCodeDefinitions = [
     }
   },
   {
-    code: 'QR003',
+    code: generateRandomCode(),
     name: 'Food Court Secret',
     phase: 'PHASE_1' as const,
     sequenceOrder: 3,
@@ -53,7 +63,7 @@ const qrCodeDefinitions = [
     }
   },
   {
-    code: 'QR004',
+    code: generateRandomCode(),
     name: 'Beat Drop Zone',
     phase: 'PHASE_1' as const,
     sequenceOrder: 4,
@@ -65,7 +75,7 @@ const qrCodeDefinitions = [
     }
   },
   {
-    code: 'QR005',
+    code: generateRandomCode(),
     name: 'Trail Convergence',
     phase: 'PHASE_1' as const,
     sequenceOrder: 5,
@@ -77,7 +87,7 @@ const qrCodeDefinitions = [
     }
   },
   {
-    code: 'QR006',
+    code: generateRandomCode(),
     name: 'Ocean Splash',
     phase: 'PHASE_1' as const,
     sequenceOrder: 6,
@@ -89,7 +99,7 @@ const qrCodeDefinitions = [
     }
   },
   {
-    code: 'QR007',
+    code: generateRandomCode(),
     name: 'Silent Pond Watcher',
     phase: 'PHASE_1' as const,
     sequenceOrder: 7,
@@ -101,7 +111,7 @@ const qrCodeDefinitions = [
     }
   },
   {
-    code: 'QR008',
+    code: generateRandomCode(),
     name: 'Silent Tails',
     phase: 'PHASE_1' as const,
     sequenceOrder: 8,
@@ -115,7 +125,7 @@ const qrCodeDefinitions = [
 
   // Phase 2 - Rare QRs (250 tokens each)
   {
-    code: 'QR009',
+    code: generateRandomCode(),
     name: 'Floating Swimmer',
     phase: 'PHASE_2' as const,
     sequenceOrder: 9,
@@ -127,7 +137,7 @@ const qrCodeDefinitions = [
     }
   },
   {
-    code: 'QR010',
+    code: generateRandomCode(),
     name: 'Pocket Loot',
     phase: 'PHASE_2' as const,
     sequenceOrder: 10,
@@ -139,7 +149,7 @@ const qrCodeDefinitions = [
     }
   },
   {
-    code: 'QR011',
+    code: generateRandomCode(),
     name: 'Godfather\'s Mercy',
     phase: 'PHASE_2' as const,
     sequenceOrder: 11,
@@ -151,7 +161,7 @@ const qrCodeDefinitions = [
     }
   },
   {
-    code: 'QR012',
+    code: generateRandomCode(),
     name: 'Supreme Secrets',
     phase: 'PHASE_2' as const,
     sequenceOrder: 12,
@@ -165,7 +175,7 @@ const qrCodeDefinitions = [
 
   // Phase 3 - Legendary QR (500 tokens)
   {
-    code: 'QR013',
+    code: generateRandomCode(),
     name: 'Legend Never Dies',
     phase: 'PHASE_3' as const,
     sequenceOrder: 13,
@@ -236,14 +246,9 @@ async function generateQRCodeFiles() {
   const manifest = []
   
   for (const qrDef of qrCodeDefinitions) {
-    // Create secure metadata without sequenceOrder for QR generation
+    // Create ultra-minimal secure metadata - only random code
     const secureMetadata = {
-      code: qrDef.code,
-      name: qrDef.name,
-      phase: qrDef.phase,
-      rarity: qrDef.rarity,
-      tokenReward: qrDef.tokenReward,
-      hint: qrDef.hint
+      code: qrDef.code
     }
     
     // Generate PNG
@@ -252,19 +257,20 @@ async function generateQRCodeFiles() {
       errorCorrectionLevel: 'H'
     })
     
-    // Convert data URL to buffer and save
+    // Convert data URL to buffer and save with admin-friendly filename
     const pngBuffer = Buffer.from(pngDataUrl.split(',')[1], 'base64')
-    const pngPath = path.join(pngDir, `${qrDef.code}.png`)
+    const adminFileName = `QR${qrDef.sequenceOrder.toString().padStart(2, '0')}_${qrDef.code}`
+    const pngPath = path.join(pngDir, `${adminFileName}.png`)
     await fs.writeFile(pngPath, pngBuffer)
     
     // Generate SVG
-    const svgContent = await generateQRCodeSVG(secureMetadata, {
+    const svgString = await generateQRCodeSVG(secureMetadata, {
       width: 2048,
       errorCorrectionLevel: 'H'
     })
     
-    const svgPath = path.join(svgDir, `${qrDef.code}.svg`)
-    await fs.writeFile(svgPath, svgContent)
+    const svgPath = path.join(svgDir, `${adminFileName}.svg`)
+    await fs.writeFile(svgPath, svgString)
     
     // Add to manifest
     manifest.push({
@@ -276,10 +282,12 @@ async function generateQRCodeFiles() {
       tokenReward: qrDef.tokenReward,
       hint: qrDef.hint.content,
       files: {
-        png: `png/${qrDef.code}.png`,
-        svg: `svg/${qrDef.code}.svg`
+        png: `png/${adminFileName}.png`,
+        svg: `svg/${adminFileName}.svg`
       },
-      qrData: createQRData(secureMetadata)
+      qrData: createQRData({
+        code: qrDef.code
+      })
     })
     
     console.log(`✅ Generated files for ${qrDef.code}`)
@@ -331,9 +339,10 @@ async function generatePreviewHTML() {
         </div>
         
         <div class="security-notice">
-            <h3>🔒 Security Enhancement</h3>
-            <p><strong>Fixed:</strong> Sequence numbers are no longer included in QR code metadata to prevent users from extracting and arranging QR codes without finding them physically.</p>
-            <p><strong>New Format:</strong> TOKEN_CRUNCHIES://[code]:[phase]:[reward]:[rarity]:[hint]</p>
+            <h3>🔒 Ultra-Maximum Security Enhancement</h3>
+            <p><strong>Fixed:</strong> QR codes now contain ONLY a random ID - no branding, names, hints, rewards, phases, or sequence information.</p>
+            <p><strong>New Format:</strong> [RANDOM_ID] (e.g., X7K9M2P4)</p>
+            <p><strong>Security Benefit:</strong> QR codes are completely anonymous and reveal absolutely nothing about the game. All information must be discovered through physical gameplay.</p>
         </div>
 
         ${qrCodeDefinitions.map(qr => `
@@ -343,7 +352,7 @@ async function generatePreviewHTML() {
             <div class="qr-grid">
                 <div class="qr-card rarity-${qr.rarity.toLowerCase()}">
                     <div class="qr-image">
-                        <img src="png/${qr.code}.png" alt="${qr.name}" />
+                        <img src="png/QR${qr.sequenceOrder.toString().padStart(2, '0')}_${qr.code}.png" alt="${qr.name}" />
                     </div>
                     <div class="qr-info">
                         <h3>${qr.name}</h3>
@@ -359,12 +368,7 @@ async function generatePreviewHTML() {
                         </div>
                         <div class="qr-data">
                             <strong>QR Data:</strong> ${createQRData({
-                              code: qr.code,
-                              name: qr.name,
-                              phase: qr.phase,
-                              rarity: qr.rarity,
-                              tokenReward: qr.tokenReward,
-                              hint: qr.hint
+                              code: qr.code
                             })}
                         </div>
                     </div>
@@ -413,9 +417,9 @@ async function verifyDatabase() {
 
 async function main() {
   try {
-    console.log('🚀 Starting secure QR code regeneration...')
-    console.log('🔒 Security Fix: Removing sequence numbers from QR metadata')
-    console.log('💬 Updating hints with new content')
+    console.log('🚀 Starting ULTRA-MAXIMUM security QR code regeneration...')
+    console.log('🔒 Security Fix: Using ONLY random IDs - no branding, names, or metadata')
+    console.log('🛡️ Complete anonymization: QR codes reveal absolutely nothing')
     console.log('')
     
     await clearExistingData()
@@ -429,10 +433,11 @@ async function main() {
     console.log('📁 Files generated in: ./generated-qr-codes/')
     console.log('🌐 View preview: ./generated-qr-codes/qr-codes-preview.html')
     console.log('')
-    console.log('🔒 Security Enhancement Applied:')
-    console.log('   - Sequence numbers removed from QR metadata')
-    console.log('   - Users can no longer extract and arrange QR codes')
-    console.log('   - QR codes must be found physically in the correct order')
+    console.log('🔒 ULTRA-MAXIMUM Security Enhancement Applied:')
+    console.log('   - QR codes contain ONLY random IDs (completely anonymous)')
+    console.log('   - No branding, names, hints, rewards, phases, or sequences')
+    console.log('   - QR codes are completely unidentifiable and reveal nothing')
+    console.log('   - All game information must be discovered through physical gameplay')
     
   } catch (error) {
     console.error('❌ Error during QR code generation:', error)

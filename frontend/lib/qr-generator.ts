@@ -18,18 +18,9 @@ export interface QRMetadata {
   version: string
 }
 
-// Secure QR metadata for generation (excludes sequence for security)
+// Ultra-secure QR metadata for generation (random ID only)
 export interface SecureQRMetadata {
   code: string
-  name: string
-  description?: string
-  phase: GamePhase
-  rarity: QRRarity
-  tokenReward: string
-  hint?: {
-    title: string
-    content: string
-  }
 }
 
 export interface QRGenerationOptions {
@@ -43,73 +34,31 @@ export interface QRGenerationOptions {
 }
 
 /**
- * Creates a QR code data string with minimal essential metadata
- * Uses a simple format: TOKEN_CRUNCHIES://[code]:[phase]:[reward]:[rarity]
- * NOTE: Sequence number is NOT included to prevent users from extracting and arranging QR codes
+ * Creates a QR code data string with ultra-minimal metadata
+ * Uses anonymous format with only random ID - no branding or identifiable information
+ * NOTE: Only random code included to prevent any metadata extraction
  */
 export function createQRData(metadata: SecureQRMetadata): string {
-  // For better scannability, use minimal data format (NO SEQUENCE NUMBER for security)
-  const minimalData = `${metadata.code}:${metadata.phase}:${metadata.tokenReward}:${metadata.rarity}`
-
-  // If hint is provided, add it but keep it simple
-  if (metadata.hint) {
-    const hintText = metadata.hint.content.substring(0, 100) // Limit hint length
-    return `TOKEN_CRUNCHIES://${minimalData}:${hintText.replace(/:/g, ';')}`
-  }
-
-  return `TOKEN_CRUNCHIES://${minimalData}`
+  // Ultra-minimal anonymous format - only random ID
+  return metadata.code
 }
 
 /**
  * Extracts metadata from a QR code data string
- * NEW FORMAT: TOKEN_CRUNCHIES://[code]:[phase]:[reward]:[rarity]:[hint]
- * NOTE: Sequence number is NOT included in QR data for security
+ * NEW FORMAT: [random_code] - completely anonymous
+ * NOTE: Only random code - all other data must be fetched from database
  */
-export function extractQRMetadata(qrData: string): QRMetadata | null {
+export function extractQRMetadata(qrData: string): { code: string } | null {
   try {
-    // Check if it's our custom format
-    if (!qrData.startsWith('TOKEN_CRUNCHIES://')) {
+    // QR data is just the random code - no parsing needed
+    const code = qrData.trim()
+    
+    // Basic validation - should be alphanumeric random string
+    if (!code || code.length < 6 || !/^[A-Z0-9_]+$/.test(code)) {
       return null
     }
 
-    // Extract data after protocol
-    const dataPart = qrData.replace('TOKEN_CRUNCHIES://', '')
-    const parts = dataPart.split(':')
-
-    if (parts.length < 4) {
-      throw new Error('Invalid QR data format')
-    }
-
-    // Parse the essential data (NO SEQUENCE NUMBER)
-    const code = parts[0]
-    const phase = parts[1] as 'PHASE_1' | 'PHASE_2' | 'PHASE_3'
-    const tokenReward = parts[2]
-    const rarity = parts[3] as 'NORMAL' | 'RARE' | 'LEGENDARY'
-
-    // Extract hint if present (everything after the 4th colon)
-    let hint = undefined
-    if (parts.length > 4) {
-      const hintText = parts.slice(4).join(':').replace(/;/g, ':')
-      // We'll need to look up the full hint from database based on code
-      hint = {
-        title: 'Location Hint',
-        content: hintText
-      }
-    }
-
-    const metadata: QRMetadata = {
-      code,
-      name: `QR Code ${code}`, // This will be looked up from database
-      phase,
-      sequenceOrder: 0, // Will be looked up from database, not from QR
-      rarity,
-      tokenReward,
-      hint,
-      timestamp: Date.now(),
-      version: '1.0'
-    }
-
-    return metadata
+    return { code }
   } catch (error) {
     console.error('Failed to extract QR metadata:', error)
     return null
