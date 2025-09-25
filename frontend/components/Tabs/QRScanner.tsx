@@ -155,6 +155,7 @@ export function QRScanner({
         }
       }, 3000);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isProcessing, processQRCode, clearResult, hasCamera, onClose, onQRScanned, scanError]);
 
   const startCamera = useCallback(async () => {
@@ -211,6 +212,7 @@ export function QRScanner({
             await qrScannerRef.current.start();
             setIsScanning(true);
             break;
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           } catch (startError: any) {
             retries--;
             console.warn(`Scanner start attempt failed (${3 - retries}/3):`, startError);
@@ -253,7 +255,7 @@ export function QRScanner({
     } finally {
       setIsInitializing(false);
     }
-  }, [handleQRResult]);
+  }, [handleQRResult, isInitializing]);
 
   const stopCamera = useCallback(() => {
     if (qrScannerRef.current) {
