@@ -422,6 +422,31 @@ export const POST = withAuth(async (request, user) => {
       const phaseAdvancement = await checkPhaseAdvancement(user.id, updatedUser.qrCodesScanned)
       console.log('Phase advancement check:', phaseAdvancement)
 
+      // Create swap opportunity (NEW: 1 swap per successful scan)
+      let swapOpportunity = null
+      try {
+        const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours expiry
+        const opportunity = await prisma.swapOpportunity.create({
+          data: {
+            userId: user.id,
+            qrScanId: scanRecord.id,
+            expiresAt: expiresAt
+          }
+        })
+
+        swapOpportunity = {
+          id: opportunity.id,
+          expiresAt: opportunity.expiresAt,
+          available: true,
+          message: '🎉 You earned a swap opportunity! Trade WMON ↔ USDT'
+        }
+
+        console.log('Created swap opportunity for user:', user.id, opportunity.id)
+      } catch (error) {
+        console.error('Failed to create swap opportunity:', error)
+        // Don't fail the scan if swap opportunity creation fails
+      }
+
       return NextResponse.json({
         success: true,
         scan: {
@@ -439,6 +464,7 @@ export const POST = withAuth(async (request, user) => {
           newPhase: phaseAdvancement.newPhase,
           message: phaseAdvancement.message
         } : null,
+        swapOpportunity: swapOpportunity,
         userStats: {
           totalTokens: updatedUser.totalTokens.toString(),
           qrCodesScanned: updatedUser.qrCodesScanned

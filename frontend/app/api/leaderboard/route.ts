@@ -76,7 +76,7 @@ async function getLeaderboardStats() {
       totalTokensDistributed,
       totalQRsScanned,
       topPlayer,
-      phaseDistribution
+      _phaseDistribution
     ] = await Promise.all([
       // Total registered users
       prisma.user.count(),

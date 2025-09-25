@@ -154,7 +154,7 @@ export function QRScanner({
         }
       }, 3000);
     }
-  }, [isProcessing, processQRCode, clearResult, hasCamera]);
+  }, [isProcessing, processQRCode, clearResult, hasCamera, onClose, onQRScanned, scanError]);
 
   const startCamera = useCallback(async () => {
     if (!videoRef.current) return;
@@ -209,7 +209,7 @@ export function QRScanner({
         setError("Failed to access camera. Please check permissions.");
       }
     }
-  }, []);
+  }, [handleQRResult]);
 
   const stopCamera = useCallback(() => {
     if (qrScannerRef.current) {

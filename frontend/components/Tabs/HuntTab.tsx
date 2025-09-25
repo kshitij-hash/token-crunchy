@@ -5,9 +5,10 @@ import { Card } from "../retroui/Card";
 import { Button } from "../retroui/Button";
 import { UserProfile } from "@/lib/api-client";
 import { getPhaseDisplayName } from "@/lib/api-client";
-import { Trophy, Scan } from "lucide-react";
+import { Trophy, Scan, ArrowRightLeft } from "lucide-react";
 import { ProgressTracker } from "./ProgressTracker";
 import { CurrentHint } from "./CurrentHint";
+import { SwapWidget } from "../SwapWidget";
 
 interface HuntTabProps {
   scannedQRs: UserProfile['scannedQRs'];
@@ -103,6 +104,30 @@ export function HuntTab({ onScanQR, userProfile }: HuntTabProps) {
                 Total QRs
               </Text>
             </div>
+          </div>
+        </Card.Content>
+      </Card>
+
+      {/* Swap Widget - New Feature */}
+      <Card className="bg-white border-gray-200 rounded-lg w-full">
+        <Card.Header>
+          <Card.Title className="flex items-center gap-2">
+            <ArrowRightLeft className="w-5 h-5 text-green-600" />
+            <Text className="text-gray-800">
+              Token Swap
+            </Text>
+          </Card.Title>
+          <Text className="text-sm text-gray-600">
+            Trade WMON ↔ USDT using your swap opportunities
+          </Text>
+        </Card.Header>
+        <Card.Content>
+          <div className="space-y-4">
+            <div className="text-sm text-gray-600">
+              <p>🎉 Each successful QR scan gives you 1 swap opportunity!</p>
+              <p>💱 Use it to trade between WMON and USDT on Monad testnet</p>
+            </div>
+            <SwapWidget />
           </div>
         </Card.Content>
       </Card>

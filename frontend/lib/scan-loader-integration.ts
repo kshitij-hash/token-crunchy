@@ -83,7 +83,7 @@ export class QRScanLoader {
         }
       }
 
-    } catch (error) {
+    } catch {
       clearInterval(progressInterval)
       onProgress?.("❌ Network error - please try again")
       
