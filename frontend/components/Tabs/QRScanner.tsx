@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Camera, CameraOff, AlertCircle, X, CheckCircle, Coins } from "lucide-react";
+import { AlertCircle, X, CheckCircle, Coins } from "lucide-react";
 import { useQRScanner } from "@/hooks/useQRScanner";
 import { formatTokens, getRarityEmoji } from "@/lib/api-client";
 import { extractQRMetadata } from "@/lib/qr-generator";
@@ -20,16 +20,20 @@ export function QRScanner({
   expectedQR,
   onClose,
 }: QRScannerProps) {
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const qrScannerRef = useRef<QrScanner | null>(null);
+  // QR Scanner refs and states - simplified like sample
+  const scanner = useRef<QrScanner | null>(null);
+  const videoEl = useRef<HTMLVideoElement>(null);
+  const qrBoxEl = useRef<HTMLDivElement>(null);
+  const [qrOn, setQrOn] = useState<boolean>(false);
+  
+  // Debouncing for duplicate scans
   const lastScannedCodeRef = useRef<string>("");
   const lastScanTimeRef = useRef<number>(0);
-  const [isScanning, setIsScanning] = useState(false);
+  
+  // UI states
   const [error, setError] = useState<string>("");
   const [scanState, setScanState] = useState<ScanState>("scanning");
-  const [hasCamera, setHasCamera] = useState(false);
   const [extractedMetadata, setExtractedMetadata] = useState<{ code: string } | null>(null);
-  const [isInitializing, setIsInitializing] = useState(false);
   
   const {
     isProcessing,
@@ -39,9 +43,13 @@ export function QRScanner({
     clearResult
   } = useQRScanner();
 
-  const handleQRResult = useCallback(async (result: QrScanner.ScanResult) => {
+  // Success handler - simplified like sample
+  const onScanSuccess = useCallback(async (result: QrScanner.ScanResult) => {
     const qrCode = result.data;
     const now = Date.now();
+    
+    // 🖨 Print the "result" to browser console.
+    console.log(result);
     
     // Prevent duplicate scans: same QR code within 2 seconds
     if (!qrCode || isProcessing || 
@@ -59,15 +67,7 @@ export function QRScanner({
     lastScannedCodeRef.current = qrCode;
     lastScanTimeRef.current = now;
 
-    // Stop scanning temporarily while processing - but don't destroy
-    if (qrScannerRef.current) {
-      try {
-        qrScannerRef.current.stop();
-      } catch (error) {
-        console.warn('Error stopping scanner:', error);
-      }
-    }
-
+    // ✅ Handle success.
     // Step 1: Extract and validate QR metadata locally first
     console.log('🔍 Scanned QR Code:', qrCode);
     
@@ -79,16 +79,6 @@ export function QRScanner({
       setTimeout(() => {
         setScanState("scanning");
         setError("");
-        // Resume scanning safely
-        if (qrScannerRef.current && hasCamera) {
-          try {
-            qrScannerRef.current.start();
-          } catch (error) {
-            console.warn('Error resuming scanner:', error);
-            // If resume fails, restart camera
-            startCamera();
-          }
-        }
       }, 3000);
       return;
     }
@@ -123,16 +113,6 @@ export function QRScanner({
           setScanState("scanning");
           setError("");
           setExtractedMetadata(null);
-          // Resume scanning safely
-          if (qrScannerRef.current && hasCamera) {
-            try {
-              qrScannerRef.current.start();
-            } catch (error) {
-              console.warn('Error resuming scanner:', error);
-              // If resume fails, restart camera
-              startCamera();
-            }
-          }
         }, 3000);
       }
     } catch (error) {
@@ -143,149 +123,100 @@ export function QRScanner({
         setScanState("scanning");
         setError("");
         setExtractedMetadata(null);
-        // Resume scanning safely
-        if (qrScannerRef.current && hasCamera) {
-          try {
-            qrScannerRef.current.start();
-          } catch (error) {
-            console.warn('Error resuming scanner:', error);
-            // If resume fails, restart camera
-            startCamera();
-          }
-        }
       }, 3000);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isProcessing, processQRCode, clearResult, hasCamera, onClose, onQRScanned, scanError]);
+  }, [isProcessing, processQRCode, clearResult, onClose, onQRScanned, scanError]);
 
-  const startCamera = useCallback(async () => {
-    if (!videoRef.current || isInitializing) return;
-
-    try {
-      setIsInitializing(true);
-      setError("");
-      
-      // Stop any existing scanner first to prevent conflicts
-      if (qrScannerRef.current) {
-        try {
-          qrScannerRef.current.stop();
-          qrScannerRef.current.destroy();
-        } catch (error) {
-          console.warn('Error cleaning up existing scanner:', error);
-        }
-        qrScannerRef.current = null;
-      }
-
-      // Add a small delay to ensure cleanup is complete (important for mobile)
-      await new Promise(resolve => setTimeout(resolve, 200));
-      
-      // Check if camera is available
-      const hasCamera = await QrScanner.hasCamera();
-      if (!hasCamera) {
-        setError("No camera found on this device");
-        return;
-      }
-
-      setHasCamera(true);
-
-      // Create QR scanner instance with mobile-optimized settings
-      qrScannerRef.current = new QrScanner(
-        videoRef.current,
-        handleQRResult,
-        {
-          onDecodeError: (err) => {
-            // Ignore decode errors - they're normal when no QR code is visible
-            console.debug("QR decode error:", err);
-          },
-          highlightScanRegion: true,
-          highlightCodeOutline: true,
-          preferredCamera: 'environment', // Use back camera if available
-          maxScansPerSecond: 5, // Reduce scan frequency for mobile performance
-        }
-      );
-
-      try {
-        // Add retry logic for mobile video loading issues
-        let retries = 3;
-        while (retries > 0) {
-          try {
-            await qrScannerRef.current.start();
-            setIsScanning(true);
-            break;
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          } catch (startError: any) {
-            retries--;
-            console.warn(`Scanner start attempt failed (${3 - retries}/3):`, startError);
-            
-            if (retries === 0) {
-              throw startError;
-            }
-            
-            // Wait before retry, especially important for mobile
-            await new Promise(resolve => setTimeout(resolve, 500));
-          }
-        }
-      } catch (startError) {
-        console.error('Error starting scanner after retries:', startError);
-        throw startError;
-      }
-    } catch (err) {
-      console.error("Camera error:", err);
-      if (err instanceof Error) {
-        if (err.name === 'NotAllowedError') {
-          setError("Camera access denied. Please allow camera permissions and try again.");
-        } else if (err.name === 'NotFoundError') {
-          setError("No camera found on this device.");
-        } else if (err.name === 'NotSupportedError') {
-          setError("Camera not supported on this device.");
-        } else if (err.message?.includes('play() request was interrupted')) {
-          setError("Camera loading interrupted. Please try again.");
-        } else if (err.message?.includes('load request')) {
-          setError("Camera is busy. Please close other camera apps and try again.");
-        } else if (err.message?.includes('only accessible if the page is transferred via https')) {
-          setError("Camera requires HTTPS. Please use https://localhost:3000 or deploy to a secure server.");
-        } else if (err.name === 'AbortError') {
-          setError("Camera operation was cancelled. Please try again.");
-        } else {
-          setError(`Camera error: ${err.message}`);
-        }
-      } else {
-        setError("Failed to access camera. Please check permissions.");
-      }
-    } finally {
-      setIsInitializing(false);
-    }
-  }, [handleQRResult, isInitializing]);
-
-  const stopCamera = useCallback(() => {
-    if (qrScannerRef.current) {
-      try {
-        qrScannerRef.current.stop();
-        qrScannerRef.current.destroy();
-      } catch (error) {
-        console.warn('Error stopping/destroying scanner:', error);
-      } finally {
-        qrScannerRef.current = null;
-      }
-    }
-    setIsScanning(false);
-    setHasCamera(false);
+  // Fail handler - simplified like sample
+  const onScanFail = useCallback((err: string | Error) => {
+    // 🖨 Print the "err" to browser console.
+    console.log(err);
   }, []);
 
-  const toggleCamera = () => {
-    if (isScanning) {
-      stopCamera();
-    } else {
-      startCamera();
-    }
-  };
-
+  // Initialize scanner - simplified like sample
   useEffect(() => {
-    startCamera();
-    return () => {
-      stopCamera();
+    console.log('🔄 QRScanner useEffect triggered', {
+      hasVideoEl: !!videoEl?.current,
+      hasScanner: !!scanner.current,
+      qrOn
+    });
+
+    const initializeScanner = async () => {
+      if (videoEl?.current && !scanner.current) {
+        console.log('📷 Creating QR Scanner instance...');
+        
+        try {
+          // Check if camera is available first
+          const hasCamera = await QrScanner.hasCamera();
+          if (!hasCamera) {
+            setError("No camera found on this device");
+            setQrOn(false);
+            return;
+          }
+          
+          // 👉 Instantiate the QR Scanner
+          scanner.current = new QrScanner(videoEl?.current, onScanSuccess, {
+            onDecodeError: onScanFail,
+            // 📷 This is the camera facing mode. In mobile devices, "environment" means back camera and "user" means front camera.
+            preferredCamera: "environment",
+            // 🖼 This will help us position our "QrFrame.svg" so that user can only scan when qr code is put in between our QrFrame.svg.
+            highlightScanRegion: true,
+            // 🔥 This will produce a yellow (default color) outline around the qr code that we scan, showing a proof that our qr-scanner is scanning that qr code.
+            highlightCodeOutline: true,
+            // 📦 A custom div which will pair with "highlightScanRegion" option above 👆. This gives us full control over our scan region.
+            overlay: qrBoxEl?.current || undefined,
+          });
+
+          console.log('🚀 Starting QR Scanner...');
+          // 🚀 Start QR Scanner
+          await scanner?.current?.start();
+          console.log('✅ QR Scanner started successfully!');
+          setQrOn(true);
+          setError(""); // Clear any previous errors
+          
+        } catch (err: unknown) {
+          console.error('❌ QR Scanner failed to start:', err);
+          setQrOn(false);
+          
+          // Better error messages based on error type
+          if (err instanceof Error) {
+            if (err.name === 'NotAllowedError') {
+              setError("Camera access denied. Please allow camera permissions and refresh the page.");
+            } else if (err.name === 'NotFoundError') {
+              setError("No camera found on this device.");
+            } else if (err.name === 'NotSupportedError') {
+              setError("Camera not supported on this device.");
+            } else {
+              setError(`Camera error: ${err.message}`);
+            }
+          } else {
+            setError(`Camera error: ${String(err)}`);
+          }
+        }
+      }
     };
-  }, [startCamera, stopCamera]);
+
+    // Add a small delay to ensure DOM is ready
+    const timer = setTimeout(initializeScanner, 100);
+
+    // 🧹 Clean up on unmount.
+    // 🚨 This removes the QR Scanner from rendering and using camera when it is closed or removed from the UI.
+    return () => {
+      clearTimeout(timer);
+      if (scanner?.current) {
+        console.log('🧹 Cleaning up QR Scanner...');
+        scanner?.current?.stop();
+      }
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [onScanSuccess, onScanFail]);
+
+  // ❌ If "camera" is not allowed in browser permissions, show an alert.
+  useEffect(() => {
+    if (!qrOn && error) {
+      console.log('⚠️ Camera not accessible:', error);
+    }
+  }, [qrOn, error]);
 
   // Verifying State
   if (scanState === "verifying") {
@@ -407,15 +338,11 @@ export function QRScanner({
 
       {/* Camera View */}
       <div className="flex-1 relative">
-        <video
-          ref={videoRef}
-          playsInline
-          muted
-          className="w-full h-full object-cover"
-        />
-
-        {/* Scanner overlay with square guide */}
-        <div className="absolute inset-0 flex items-center justify-center">
+        {/* QR Scanner Video */}
+        <video ref={videoEl} className="w-full h-full object-cover"></video>
+        
+        {/* QR Box overlay */}
+        <div ref={qrBoxEl} className="absolute inset-0 flex items-center justify-center">
           <div className="relative">
             <div className="w-64 h-64 border-4 border-white rounded-lg relative">
               {/* Corner guides */}
@@ -449,21 +376,8 @@ export function QRScanner({
           </div>
         )}
 
-        <div className="flex gap-4 justify-center">
-          <button
-            onClick={toggleCamera}
-            className="bg-gray-700 text-white p-3 rounded-lg"
-          >
-            {isScanning ? (
-              <CameraOff className="w-6 h-6" />
-            ) : (
-              <Camera className="w-6 h-6" />
-            )}
-          </button>
-        </div>
-
         <p className="text-gray-400 text-xs text-center mt-4">
-          {isScanning ? "Camera is active - point at QR code to scan" : "Camera is off"}
+          {qrOn ? "Camera is active - point at QR code to scan" : "Initializing camera..."}
         </p>
       </div>
     </div>
