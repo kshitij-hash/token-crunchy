@@ -13,11 +13,14 @@ export async function GET(request: NextRequest) {
     const sortField = validSortFields.includes(sortBy) ? sortBy : 'totalTokens'
 
     // Get leaderboard entries with ranking
+    // Primary sort: Max tokens/QRs first (desc)
+    // Secondary sort: For ties, earliest achiever wins (asc) - competitive fairness
+    // Tertiary sort: Most recent activity as final tie-breaker (desc)
     const leaderboardEntries = await prisma.leaderboardEntry.findMany({
       orderBy: [
-        { [sortField]: 'desc' },
-        { lastScanAt: 'desc' }, // Secondary sort by last scan time
-        { updatedAt: 'desc' }   // Tertiary sort by update time
+        { [sortField]: 'desc' },     // Primary: Highest score first
+        { updatedAt: 'asc' },        // Secondary: Earliest achiever wins ties
+        { lastScanAt: 'desc' }       // Tertiary: Most recent activity
       ],
       skip: offset,
       take: limit,
@@ -92,9 +95,13 @@ async function getLeaderboardStats() {
         where: { transferStatus: 'CONFIRMED' }
       }),
       
-      // Top player
+      // Top player - same sorting logic as main leaderboard
       prisma.leaderboardEntry.findFirst({
-        orderBy: { totalTokens: 'desc' },
+        orderBy: [
+          { totalTokens: 'desc' },     // Highest tokens first
+          { updatedAt: 'asc' },        // Earliest achiever wins ties
+          { lastScanAt: 'desc' }       // Most recent activity
+        ],
         select: {
           nickname: true,
           totalTokens: true,

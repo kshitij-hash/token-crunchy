@@ -1,8 +1,7 @@
 "use client";
 
-import { Zap, Search, Sparkles, Target, Eye } from "lucide-react";
+import { Eye, Sparkles } from "lucide-react";
 import { Text } from "../retroui/Text";
-import { getRarityEmoji } from "@/lib/api-client";
 
 interface NextQR {
   name: string;
@@ -98,7 +97,6 @@ export function CurrentHint({ nextQR, isPhaseComplete, currentPhase }: CurrentHi
   };
 
   const style = getRarityStyle(nextQR.rarity);
-  const rarityEmoji = getRarityEmoji(nextQR.rarity);
 
   return (
     <div className={`relative overflow-hidden ${style.bg} border-2 ${style.border} ${style.glow} hover:shadow-lg transition-all`}>
@@ -117,32 +115,10 @@ export function CurrentHint({ nextQR, isPhaseComplete, currentPhase }: CurrentHi
       )}
 
       <div className="p-6 space-y-6">
-        {/* Header */}
-        <div className="text-center">
-          <div className={`inline-block ${style.accent} text-white px-4 py-2 border-2 border-black shadow-md mb-4 font-head font-bold text-lg flex items-center gap-2`}>
-            <Target className="w-5 h-5" />
-            MISSION BRIEFING
-          </div>
-        </div>
 
         {/* QR Info Card */}
         <div className="bg-white border-2 border-black shadow-md p-4">
-          <div className="flex items-center gap-4 mb-4">
-            <div className="text-4xl">{rarityEmoji}</div>
-            <div className="flex-1">
-              <Text className={`font-head font-bold text-xl ${style.text}`}>
-                {nextQR.name}
-              </Text>
-              <div className="flex items-center gap-2 mt-1">
-                <div className="bg-black text-white px-2 py-1 text-xs font-head font-bold">
-                  #{nextQR.sequenceOrder}
-                </div>
-                <Text className="text-sm text-muted-foreground font-medium">
-                  TARGET ACQUIRED
-                </Text>
-              </div>
-            </div>
-          </div>
+          
 
           {/* Hint Section */}
           {nextQR.hint && (
@@ -164,15 +140,6 @@ export function CurrentHint({ nextQR, isPhaseComplete, currentPhase }: CurrentHi
               </div>
             </div>
           )}
-        </div>
-
-        {/* Action Footer */}
-        <div className="text-center">
-          <div className="inline-flex items-center gap-2 bg-black text-primary px-4 py-2 border-2 border-black shadow-md font-head font-bold animate-pulse">
-            <Search className="w-4 h-4" />
-            DECODE & HUNT
-            <Zap className="w-4 h-4" />
-          </div>
         </div>
       </div>
 

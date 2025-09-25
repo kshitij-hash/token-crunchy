@@ -6,7 +6,7 @@ import { LoginPage } from "@/components/LoginPage";
 import { QRScanner } from "@/components/Tabs/QRScanner";
 import { TabNavigation } from "@/components/Tabs/TabNavigation";
 import { RegistrationModal } from "@/components/RegistrationModal";
-import { Info, User } from "lucide-react";
+import { Info } from "lucide-react";
 import { Dialog } from "@/components/retroui/Dialog";
 import { ConnectKitButton } from "connectkit";
 import { Button } from "@/components/retroui/Button";
@@ -15,7 +15,6 @@ import { Loader } from "@/components/retroui/Loader";
 import { LeaderboardTab } from "@/components/Tabs/LeaderboardTab";
 import { HuntTab } from "@/components/Tabs/HuntTab";
 import { useUser } from "@/hooks/useUser";
-import { formatTokens, getPhaseDisplayName } from "@/lib/api-client";
 
 
 export default function Home() {
@@ -187,19 +186,19 @@ export default function Home() {
             </Dialog>
 
             {/* User Profile Button */}
-            {user && (
-              <Button variant="outline" size="sm" className="flex items-center gap-2">
+            {/* {user && (
+              <Button variant="outline" size="sm" className="flex items-center gap-2 rounded-full">
                 <User className="w-4 h-4" />
                 <span className="hidden sm:inline">{user.nickname}</span>
               </Button>
-            )}
+            )} */}
           </div>
           
           <ConnectKitButton showAvatar={false} />
         </div>
 
         {/* User Stats Bar */}
-        {user && (
+        {/* {user && (
           <div className="flex items-center justify-between text-sm">
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-1">
@@ -216,7 +215,7 @@ export default function Home() {
               </div>
             </div>
           </div>
-        )}
+        )} */}
       </div>
 
       {/* Tab Content */}
