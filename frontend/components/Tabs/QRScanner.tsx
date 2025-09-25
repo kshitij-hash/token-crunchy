@@ -29,6 +29,7 @@ export function QRScanner({
   const [scanState, setScanState] = useState<ScanState>("scanning");
   const [hasCamera, setHasCamera] = useState(false);
   const [extractedMetadata, setExtractedMetadata] = useState<{ code: string } | null>(null);
+  const [isInitializing, setIsInitializing] = useState(false);
   
   const {
     isProcessing,
@@ -157,10 +158,25 @@ export function QRScanner({
   }, [isProcessing, processQRCode, clearResult, hasCamera, onClose, onQRScanned, scanError]);
 
   const startCamera = useCallback(async () => {
-    if (!videoRef.current) return;
+    if (!videoRef.current || isInitializing) return;
 
     try {
+      setIsInitializing(true);
       setError("");
+      
+      // Stop any existing scanner first to prevent conflicts
+      if (qrScannerRef.current) {
+        try {
+          qrScannerRef.current.stop();
+          qrScannerRef.current.destroy();
+        } catch (error) {
+          console.warn('Error cleaning up existing scanner:', error);
+        }
+        qrScannerRef.current = null;
+      }
+
+      // Add a small delay to ensure cleanup is complete (important for mobile)
+      await new Promise(resolve => setTimeout(resolve, 200));
       
       // Check if camera is available
       const hasCamera = await QrScanner.hasCamera();
@@ -171,7 +187,7 @@ export function QRScanner({
 
       setHasCamera(true);
 
-      // Create QR scanner instance
+      // Create QR scanner instance with mobile-optimized settings
       qrScannerRef.current = new QrScanner(
         videoRef.current,
         handleQRResult,
@@ -183,14 +199,32 @@ export function QRScanner({
           highlightScanRegion: true,
           highlightCodeOutline: true,
           preferredCamera: 'environment', // Use back camera if available
+          maxScansPerSecond: 5, // Reduce scan frequency for mobile performance
         }
       );
 
       try {
-        await qrScannerRef.current.start();
-        setIsScanning(true);
+        // Add retry logic for mobile video loading issues
+        let retries = 3;
+        while (retries > 0) {
+          try {
+            await qrScannerRef.current.start();
+            setIsScanning(true);
+            break;
+          } catch (startError: any) {
+            retries--;
+            console.warn(`Scanner start attempt failed (${3 - retries}/3):`, startError);
+            
+            if (retries === 0) {
+              throw startError;
+            }
+            
+            // Wait before retry, especially important for mobile
+            await new Promise(resolve => setTimeout(resolve, 500));
+          }
+        }
       } catch (startError) {
-        console.error('Error starting scanner:', startError);
+        console.error('Error starting scanner after retries:', startError);
         throw startError;
       }
     } catch (err) {
@@ -202,12 +236,22 @@ export function QRScanner({
           setError("No camera found on this device.");
         } else if (err.name === 'NotSupportedError') {
           setError("Camera not supported on this device.");
+        } else if (err.message?.includes('play() request was interrupted')) {
+          setError("Camera loading interrupted. Please try again.");
+        } else if (err.message?.includes('load request')) {
+          setError("Camera is busy. Please close other camera apps and try again.");
+        } else if (err.message?.includes('only accessible if the page is transferred via https')) {
+          setError("Camera requires HTTPS. Please use https://localhost:3000 or deploy to a secure server.");
+        } else if (err.name === 'AbortError') {
+          setError("Camera operation was cancelled. Please try again.");
         } else {
           setError(`Camera error: ${err.message}`);
         }
       } else {
         setError("Failed to access camera. Please check permissions.");
       }
+    } finally {
+      setIsInitializing(false);
     }
   }, [handleQRResult]);
 
