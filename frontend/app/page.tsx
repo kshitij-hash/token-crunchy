@@ -58,9 +58,6 @@ export default function Home() {
     return <LoginPage />;
   }
 
-  // Debug: Log current state
-  console.log('Page state:', { isConnected, isLoading, error, needsRegistration, hasUser: !!user });
-
   // Show loading state while checking user
   if (isLoading) {
     return (

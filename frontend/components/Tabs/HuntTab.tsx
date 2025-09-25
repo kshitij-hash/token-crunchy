@@ -17,16 +17,6 @@ interface HuntTabProps {
 }
 
 export function HuntTab({ onScanQR, userProfile }: HuntTabProps) {
-  console.log('HuntTab render:', { 
-    hasUserProfile: !!userProfile, 
-    hasPhaseProgress: !!userProfile?.phaseProgress,
-    userProfile: userProfile ? {
-      id: userProfile.id,
-      nickname: userProfile.nickname,
-      currentPhase: userProfile.currentPhase,
-      phaseProgress: userProfile.phaseProgress
-    } : null
-  });
 
   if (!userProfile) {
     return (

@@ -99,13 +99,12 @@ export function SwapWidget({ opportunityId }: { opportunityId?: string }) {
     }
 
     try {
-      const result = await executeSwap({
+      await executeSwap({
         sellToken,
         buyToken,
         sellAmount,
         opportunityId: opportunityToUse,
       });
-      console.log("Swap successful:", result);
     } catch (err) {
       console.error("Swap error:", err);
     }
